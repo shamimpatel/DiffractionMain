@@ -56,8 +56,8 @@ int main()
     DoubleFromMap("CCDXMax", InputData, InputCCDXMax);
     DoubleFromMap("CCDYMax", InputData, InputCCDYMax);
 
-    InputCCDOrigin.Print();
-    InputCCDNormal.Print();
+    cout << "CCDOrigin:\t"; InputCCDOrigin.Print();
+    cout << "CCDNormal:\t"; InputCCDNormal.Print();
 
 
     CCD CCDCamera(InputCCDOrigin, InputCCDNormal, InputCCDAngle,
@@ -71,12 +71,34 @@ int main()
 
     CCDCamera.GenerateCCDCorners( CCDCorners[0], CCDCorners[1], CCDCorners[2], CCDCorners[3]);
 
+    double CCDXMin = CCDCorners[0].x, CCDXMax = CCDCorners[0].x, CCDYMin = CCDCorners[0].y, CCDYMax = CCDCorners[0].y;
+    
     cout << "CCDBounds:" << endl;
-    CCDCorners[0].Print();
-    CCDCorners[1].Print();
-    CCDCorners[2].Print();
-    CCDCorners[3].Print();
+    
+    
+    for(int i = 0; i<4; i++)
+    {
+        CCDCorners[i].Print();
+        if(CCDCorners[i].x < CCDXMin)
+        {
+            CCDXMin = CCDCorners[i].x;
+        }
+        if(CCDCorners[i].y < CCDYMin)
+        {
+            CCDYMin = CCDCorners[i].y;
+        }
+        if(CCDCorners[i].x > CCDXMax)
+        {
+            CCDXMax = CCDCorners[i].x;
+        }
+        if(CCDCorners[i].y > CCDYMax)
+        {
+            CCDYMax = CCDCorners[i].y;
+        }
 
+    }
+   
+   
     Vector CrystalCorner1(0,-0.1,0), CrystalCorner2(0,0.1,0), CrystalCorner3(0.1,-0.1,0), CrystalCorner4(0.1,0.1,0);
 
     Vector Corners[4];
@@ -262,7 +284,7 @@ int main()
                     float PathLength = fabs(Thickness/Direction.z); //length xray takes through crystal
                     float ProbAbsorb = 1.0f - exp( -1.0f * AbsorbCoeff * PathLength);
 
-                    for(int repeat = 0; repeat < 2000; repeat++) //use 2k here for NIF poster
+                    for(int repeat = 0; repeat < 500; repeat++) //use 2k here for NIF poster
                     {
                         if(uni() < (ProbAbsorb)*0.019*0.5) //uni() < (ProbAbsorb)*0.019*0.5
                         {
@@ -319,9 +341,9 @@ int main()
                             double CCDIntersectX = NewSource.x + ((CCDZ-NewSource.z)/(EmitDirection.z))*EmitDirection.x;
                             double CCDIntersectY = NewSource.y + ((CCDZ-NewSource.z)/(EmitDirection.z))*EmitDirection.y;
 
-                            if( CCDIntersectX > 110.0 && CCDIntersectX < 115.0) //120-120.1
+                            if( CCDIntersectX > CCDXMin && CCDIntersectX < CCDXMax)
                             {
-                                if( CCDIntersectY < 1.0 && CCDIntersectY > -1.0)
+                                if( CCDIntersectY < CCDYMax && CCDIntersectY > CCDYMin)
                                 {
                                     FluoResults << CCDIntersectX << "\t" << CCDIntersectY << endl;
                                     AdvFluoResults << NewSource.x << "\t" << NewSource.y << "\t" <<
@@ -330,7 +352,10 @@ int main()
                                 }
                             }
                         }
-
+                        #ifdef FLU_ENABLE
+                        //using R < blahblah gives clustering??
+                        //Tantalum Fluo: http://www.nist.gov/data/PDFfiles/jpcrd473.pdf
+                        //0.5 is from only creating x-rays that point upwards.
                         else if(uni() < ProbScatter) //R < ProbScatter
                         {
                             float RockingCurve;
@@ -366,9 +391,9 @@ int main()
                             double CCDIntersectX = NewSource.x + ((CCDZ-NewSource.z)/(ScatterDirection.z))*ScatterDirection.x; //60
                             double CCDIntersectY = NewSource.y + ((CCDZ-NewSource.z)/(ScatterDirection.z))*ScatterDirection.y; //60
 
-                            if( CCDIntersectX > 110.0f && CCDIntersectX < 115.0f)
+                            if( CCDIntersectX > CCDXMin && CCDIntersectX < CCDXMax)
                             {
-                                if( CCDIntersectY < 1.0f && CCDIntersectY > -1.0f)
+                                if( CCDIntersectY < CCDYMax && CCDIntersectY > CCDYMin)
                                 {
                                     DiffractResults << CCDIntersectX << "\t" << CCDIntersectY << "\t" << Energy << "\t" << BraggAngle << endl;
                                     AdvDiffractResults << NewSource.x << "\t" << NewSource.y << "\t" <<
@@ -377,13 +402,8 @@ int main()
                                     nDiffracted++;
                                 }
                             }
-                        }
-#ifdef FLU_ENABLE
-                        //using R < blahblah gives clustering??
-                        //Tantalum Fluo: http://www.nist.gov/data/PDFfiles/jpcrd473.pdf
-                        //0.5 is from only creating x-rays that point upwards.
-                        //else
-#endif
+                        }                        
+                        #endif
                     }
                 }
             }
@@ -392,7 +412,7 @@ int main()
 
             if(Progress > ProgressCounter)
             {
-                int ElapsedTime = time(NULL) - StartTime;
+                int ElapsedTime = int(time(NULL) - StartTime);
                 cout << "Progress: " << Progress*100.0f << "%\t E = " << Energy << "\t(" << ElapsedTime << "s)"<< endl;
                 ProgressCounter += 0.01f;
             }
@@ -404,6 +424,8 @@ int main()
 
     AdvDiffractResults.close();
     AdvFluoResults.close();
+    
+    cout << "Done!" << endl;
 
     return 0;
 }
