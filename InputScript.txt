@@ -1,0 +1,17 @@
+CCDOrigin	110,-1,50
+CCDNormal	0,0,1
+CCDAngle	0
+CCDXMin		0
+CCDXMax		5
+CCDYMin		0
+CCDYMax		2
+SolidAngleDelta		0.005
+DiffractionData		ProcessedResults.txt
+LatticeConstant		3.31
+AbsorptionData	TaAbsorbCoeff.txt
+CrystalThickness	500000
+SourceZ		5
+CCDZ		50
+MinEnergy	3
+MaxEnergy	9
+DeltaE		0.0005
