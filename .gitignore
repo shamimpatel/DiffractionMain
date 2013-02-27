@@ -162,4 +162,7 @@ pip-log.txt
 # Mac crap
 .DS_Store
 
-*.txt
+DiffractResults.txt
+FluoResults.txt
+AdvFluoResults.txt
+AdvDiffractResults.txt
