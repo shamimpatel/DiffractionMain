@@ -63,8 +63,6 @@ int main()
                   InputCCDXMin, InputCCDXMax,
                   InputCCDYMin, InputCCDYMax);
 
-    //Vector CCDCorner1, CCDCorner2, CCDCorner3, CCDCorner4;
-
     Vector CCDCorners[4];
 
     CCDCamera.GenerateCCDCorners( CCDCorners[0], CCDCorners[1], CCDCorners[2], CCDCorners[3]);
@@ -96,15 +94,24 @@ int main()
 
     }
    
-   
-    Vector CrystalCorner1(0,-0.1,0), CrystalCorner2(0,0.1,0), CrystalCorner3(0.1,-0.1,0), CrystalCorner4(0.1,0.1,0);
-
-    Vector Corners[4];
-    Corners[0] = CrystalCorner1;
-    Corners[1] = CrystalCorner2;
-    Corners[2] = CrystalCorner3;
-    Corners[3] = CrystalCorner4;
-
+    Vector CrystalOrigin(0,-0.1,0);
+    double CrystalXLength = 0.1;
+    double CrystalYLength = 0.2;
+    
+    
+    Vector CrystalCorners[4];
+    
+    CrystalCorners[0] = Vector(CrystalOrigin);
+    CrystalCorners[1] = Vector(0,CrystalOrigin.y+CrystalYLength,0);
+    CrystalCorners[2] = Vector(CrystalOrigin.x+CrystalXLength,CrystalOrigin.y,0);
+    CrystalCorners[3] = Vector(CrystalOrigin.x+CrystalXLength,CrystalOrigin.y+CrystalYLength,0);
+    
+    cout << "Crystal Corners:" << endl;
+    for(int i = 0; i<4; i++)
+    {
+        CrystalCorners[i].Print();
+    }
+    
     double DirectionMinX = 0.0, DirectionMinY = 0.0, DirectionMaxX = 0.0, DirectionMaxY = 0.0;
     double DirectionMinCosTheta = 0.0, DirectionMaxCosTheta = 0.0, DirectionMinPhi = 0.0, DirectionMaxPhi = 0.0;
 
@@ -116,7 +123,7 @@ int main()
     {
         for( int iCCDCorner = 0; iCCDCorner<4; iCCDCorner++)
         {
-            Vector Direction = CCDCorners[iCCDCorner] - Corners[iCrystalCorner];
+            Vector Direction = CCDCorners[iCCDCorner] - CrystalCorners[iCrystalCorner];
             Direction = Direction.Normalized();
 
             double CosTheta = cos(Direction.GetTheta());
@@ -174,8 +181,6 @@ int main()
         }
     }
 
-    /*cout << "X:\t" << DirectionMinX << "\t" << DirectionMaxX << endl;
-    cout << "Y:\t" << DirectionMinY << "\t" << DirectionMaxY << endl;*/
 
     double SolidAngleDelta = 0.005; //% tolerance for solid angle rejection. (how much we add/take away to the x&y limits)
 
@@ -191,7 +196,7 @@ int main()
     DirectionMaxCosTheta += DirectionMaxCosTheta*SolidAngleDelta;
     DirectionMaxPhi += DirectionMaxPhi*SolidAngleDelta;
 
-
+    cout << "Emitted ray bounds:" << endl;
     cout << "X:\t" << DirectionMinX << "\t" << DirectionMaxX << endl;
     cout << "Y:\t" << DirectionMinY << "\t" << DirectionMaxY << endl;
 
@@ -233,14 +238,16 @@ int main()
     ofstream AdvDiffractResults( "AdvDiffractResults.txt");
     ofstream AdvFluoResults( "AdvFluoResults.txt" );
 
+    double CCDZ = InputCCDOrigin.z;
 
-    double SourceZ = 5.0;
-    double CCDZ = 50.0;
+    //DoubleFromMap("SourceZ", InputData, SourceZ);
+    //DoubleFromMap("CCDZ", InputData, CCDZ);
 
-    DoubleFromMap("SourceZ", InputData, SourceZ);
-    DoubleFromMap("CCDZ", InputData, CCDZ);
-
-    Vector Source( -3.0f, 0.0f, SourceZ);
+    Vector Source( -3.0f, 0.0f, 5.0);
+    
+    
+    VectorFromMap("Source", InputData, Source);
+    double SourceZ = Source.z;
 
     double MinE = 3.0;//4.23;
     double MaxE = 9.0;//4.28;
@@ -251,12 +258,39 @@ int main()
     DoubleFromMap("DeltaE", InputData, DeltaE);
 
     int nEPoints = (MaxE - MinE)/DeltaE;
-    //float Originalx = Source.x;
-
-    long unsigned int StartTime = time(NULL);
-
-    int nDiffracted = 0, nFluoresced = 0;
+           
     
+    double minSourceDirectionX = (CrystalOrigin - Source).x;
+    double maxSourceDirectionX = minSourceDirectionX + CrystalXLength;
+    double DeltaSourceDirectionX        = 0.01;
+    
+    
+    if(minSourceDirectionX > maxSourceDirectionX)
+    {
+        swap(minSourceDirectionX,maxSourceDirectionX);
+    }
+    
+    cout << "X Source Ranges:\t" << minSourceDirectionX << "\t" << maxSourceDirectionX << endl;
+    
+    
+    
+    double minSourceDirectionY = (CrystalOrigin - Source).y;
+    double maxSourceDirectionY = minSourceDirectionY + CrystalYLength;
+    double DeltaSourceDirectionY        = 0.01;
+    
+    
+    if(minSourceDirectionY > maxSourceDirectionY)
+    {
+        swap(minSourceDirectionY,maxSourceDirectionY);
+    }
+    
+    cout << "Y Source Ranges:\t" << minSourceDirectionY << "\t" << maxSourceDirectionY << endl;
+    
+    
+    int nDirectionXPoints = (maxSourceDirectionX - minSourceDirectionX)/DeltaSourceDirectionX; //this is a truncation not a rounding operation so likely to get one less point.
+    int nDirectionYPoints = (maxSourceDirectionY - minSourceDirectionY)/DeltaSourceDirectionY;
+    
+   
     
     int nRepeats = 500;
     IntFromMap("Repeats", InputData, nRepeats);
@@ -270,7 +304,10 @@ int main()
     
     bRockingCurve = int(iRockingCurve);
     
-   
+    int nDiffracted = 0, nFluoresced = 0;
+    
+    long unsigned int StartTime = time(NULL);
+    
     for(float Sx = 0.0f; Sx <= 0.0f; Sx += 0.5f)
     {
         //Source.x = Sx+Originalx;
@@ -281,10 +318,14 @@ int main()
             double Energy = MinE + DeltaE*EnergyTick;
             float ProbScatter = PD.GetModifiedScatterProb(Energy);
             float AbsorbCoeff = TaMuData.GetAbsorbCoeffDataPoint( EnergyToWavelength(Energy) );
-            for( double x = 3; x <= 3.1; x += 0.01)
+            //for( double x = 3; x <= 3.1; x += 0.01)
+            for(int iXDirectionCounter = 0; iXDirectionCounter < nDirectionXPoints; iXDirectionCounter++)
             {
-                for( double y = -0.1; y <= 0.1; y += 0.01)
+                double x = minSourceDirectionX + DeltaSourceDirectionX*iXDirectionCounter;
+                //for( double y = -0.1; y <= 0.1; y += 0.01)
+                for(int iYDirectionCounter = 0; iYDirectionCounter < nDirectionYPoints; iYDirectionCounter++)
                 {
+                    double y = minSourceDirectionY + DeltaSourceDirectionY*iYDirectionCounter;
                     //construct a vector that goes down SourceZ units and across a variable amount
                     Vector Direction( x, y, -1.0*SourceZ);
                     Direction = Direction.Normalized();
@@ -299,7 +340,7 @@ int main()
                         //using R < blahblah gives clustering??
                         //Tantalum Fluo: http://www.nist.gov/data/PDFfiles/jpcrd473.pdf
                         //0.5 is from only creating x-rays that point upwards.
-                        if(uni() < (ProbAbsorb)*0.019*0.5) //uni() < (ProbAbsorb)*0.019*0.5
+                        if(uni() < (ProbAbsorb)*0.019*0.5)
                         {
                             float AbsorptionLength = (-1.0f / AbsorbCoeff) * log(uni()); //how far xray travelled into material
                             while(AbsorptionLength > PathLength)
@@ -389,7 +430,6 @@ int main()
                                 ScatterAngle = BraggAngle*2.0;
                             }
                             
-                            //Vector ScatterDirection = ScatterUnitVector( Direction, BraggAngle*2.0, PhiAngle); //Use this for no rocking curve.
                             Vector ScatterDirection = ScatterUnitVector( Direction, ScatterAngle, PhiAngle);
 
                             if(ScatterDirection.z <= 0.0f)

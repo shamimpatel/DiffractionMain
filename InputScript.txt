@@ -10,10 +10,9 @@ DiffractionData		ProcessedScatteringData.txt
 LatticeConstant		3.31
 AbsorptionData	TaAbsorbCoeff.txt
 CrystalThickness	500000
-SourceZ		5
-CCDZ		50
+Source		-3,0,5
 MinEnergy	3
 MaxEnergy	9
 DeltaE		0.0005
-Repeats	2000
-RockingCurve	0
+Repeats		6000
+RockingCurve	1
