@@ -6,7 +6,7 @@ CCDXMax		5
 CCDYMin		0
 CCDYMax		2
 SolidAngleDelta		0.005
-DiffractionData		ProcessedResults.txt
+DiffractionData		ProcessedScatteringData.txt
 LatticeConstant		3.31
 AbsorptionData	TaAbsorbCoeff.txt
 CrystalThickness	500000

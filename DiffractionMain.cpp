@@ -31,7 +31,7 @@ typedef boost::mt11213b base_generator_type;
 //http://www.boost.org/doc/libs/1_52_0/doc/html/boost_random/reference.html
 
 int main()
-{
+{    
     ifstream datafile("InputScript.txt");
     std::map<std::string,std::string> InputData;
     AddToMapFromFile(datafile, InputData);
@@ -284,7 +284,7 @@ int main()
                     float PathLength = fabs(Thickness/Direction.z); //length xray takes through crystal
                     float ProbAbsorb = 1.0f - exp( -1.0f * AbsorbCoeff * PathLength);
 
-                    for(int repeat = 0; repeat < 500; repeat++) //use 2k here for NIF poster
+                    for(int repeat = 0; repeat < 2000; repeat++) //use 2k here for NIF poster
                     {
                         if(uni() < (ProbAbsorb)*0.019*0.5) //uni() < (ProbAbsorb)*0.019*0.5
                         {

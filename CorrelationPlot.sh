@@ -1,0 +1,2 @@
+gnuplot CorrelationPlotscript.txt
+open CorrelationPlot.pdf

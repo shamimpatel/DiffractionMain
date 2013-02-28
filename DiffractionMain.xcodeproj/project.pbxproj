@@ -7,11 +7,23 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		6C12027C16DF733900690295 /* DiffractionMainRun in Copy Files */ = {isa = PBXBuildFile; fileRef = 6C12027B16DF732A00690295 /* DiffractionMainRun */; };
 		6CD2EF2D16DE19CA00B6283B /* DiffractionMain.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 6CD2EF2C16DE19CA00B6283B /* DiffractionMain.1 */; };
 		6CD2EF3616DE1C2C00B6283B /* DiffractionMain.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6CD2EF3516DE1C2C00B6283B /* DiffractionMain.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		6C12027816DF668300690295 /* Copy Files */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /Users/shamim/Documents/Code/SPEDXSim/DiffractionMain;
+			dstSubfolderSpec = 0;
+			files = (
+				6C12027C16DF733900690295 /* DiffractionMainRun in Copy Files */,
+			);
+			name = "Copy Files";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6CD2EF2516DE19CA00B6283B /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -25,7 +37,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		6CD2EF2716DE19CA00B6283B /* DiffractionMain */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = DiffractionMain; sourceTree = BUILT_PRODUCTS_DIR; };
+		6C12027B16DF732A00690295 /* DiffractionMainRun */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; name = DiffractionMainRun; path = "../../../../../Library/Developer/Xcode/DerivedData/SPEDXSim-ftdmncttqlednuahdomyuuuyfebv/Build/Products/Release/DiffractionMainRun"; sourceTree = "<group>"; };
+		6CD2EF2716DE19CA00B6283B /* Main */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; name = Main; path = /Users/shamim/Documents/Code/SPEDXSim/DiffractionMain/build/Release/Main; sourceTree = "<absolute>"; };
 		6CD2EF2C16DE19CA00B6283B /* DiffractionMain.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = DiffractionMain.1; sourceTree = "<group>"; };
 		6CD2EF3516DE1C2C00B6283B /* DiffractionMain.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DiffractionMain.cpp; sourceTree = SOURCE_ROOT; };
 		6CD2EF3816DE221800B6283B /* AbsorbCoeffData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AbsorbCoeffData.h; path = ../../../Include/AbsorbCoeffData.h; sourceTree = "<group>"; };
@@ -52,25 +65,17 @@
 		6CD2EF1E16DE19CA00B6283B = {
 			isa = PBXGroup;
 			children = (
+				6CD2EF3716DE220900B6283B /* Headers */,
 				6CD2EF2916DE19CA00B6283B /* DiffractionMain */,
-				6CD2EF2816DE19CA00B6283B /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		6CD2EF2816DE19CA00B6283B /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				6CD2EF2716DE19CA00B6283B /* DiffractionMain */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 		6CD2EF2916DE19CA00B6283B /* DiffractionMain */ = {
 			isa = PBXGroup;
 			children = (
-				6CD2EF3716DE220900B6283B /* Headers */,
 				6CD2EF3516DE1C2C00B6283B /* DiffractionMain.cpp */,
 				6CD2EF2C16DE19CA00B6283B /* DiffractionMain.1 */,
+				6C12027B16DF732A00690295 /* DiffractionMainRun */,
 			);
 			path = DiffractionMain;
 			sourceTree = "<group>";
@@ -88,26 +93,28 @@
 				6CD2EF3F16DE221800B6283B /* XRay.h */,
 			);
 			name = Headers;
+			path = DiffractionMain;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		6CD2EF2616DE19CA00B6283B /* DiffractionMain */ = {
+		6CD2EF2616DE19CA00B6283B /* DiffractionMainRun */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 6CD2EF3016DE19CA00B6283B /* Build configuration list for PBXNativeTarget "DiffractionMain" */;
+			buildConfigurationList = 6CD2EF3016DE19CA00B6283B /* Build configuration list for PBXNativeTarget "DiffractionMainRun" */;
 			buildPhases = (
 				6CD2EF2316DE19CA00B6283B /* Sources */,
 				6CD2EF2416DE19CA00B6283B /* Frameworks */,
 				6CD2EF2516DE19CA00B6283B /* CopyFiles */,
+				6C12027816DF668300690295 /* Copy Files */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = DiffractionMain;
+			name = DiffractionMainRun;
 			productName = DiffractionMain;
-			productReference = 6CD2EF2716DE19CA00B6283B /* DiffractionMain */;
+			productReference = 6CD2EF2716DE19CA00B6283B /* Main */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -127,11 +134,11 @@
 				en,
 			);
 			mainGroup = 6CD2EF1E16DE19CA00B6283B;
-			productRefGroup = 6CD2EF2816DE19CA00B6283B /* Products */;
+			productRefGroup = 6CD2EF1E16DE19CA00B6283B;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				6CD2EF2616DE19CA00B6283B /* DiffractionMain */,
+				6CD2EF2616DE19CA00B6283B /* DiffractionMainRun */,
 			);
 		};
 /* End PBXProject section */
@@ -241,13 +248,14 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		6CD2EF3016DE19CA00B6283B /* Build configuration list for PBXNativeTarget "DiffractionMain" */ = {
+		6CD2EF3016DE19CA00B6283B /* Build configuration list for PBXNativeTarget "DiffractionMainRun" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				6CD2EF3116DE19CA00B6283B /* Debug */,
 				6CD2EF3216DE19CA00B6283B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

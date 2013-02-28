@@ -16,7 +16,7 @@
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "6CD2EF2616DE19CA00B6283B"
                BuildableName = "DiffractionMain"
-               BlueprintName = "DiffractionMain"
+               BlueprintName = "DiffractionMainRun"
                ReferencedContainer = "container:DiffractionMain.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -34,7 +34,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "6CD2EF2616DE19CA00B6283B"
             BuildableName = "DiffractionMain"
-            BlueprintName = "DiffractionMain"
+            BlueprintName = "DiffractionMainRun"
             ReferencedContainer = "container:DiffractionMain.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -45,7 +45,7 @@
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
       customWorkingDirectory = "/Users/shamim/Documents/Code/SPEDXSim/DiffractionMain"
-      buildConfiguration = "Debug"
+      buildConfiguration = "Release"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       allowLocationSimulation = "YES">
@@ -53,8 +53,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "6CD2EF2616DE19CA00B6283B"
-            BuildableName = "DiffractionMain"
-            BlueprintName = "DiffractionMain"
+            BuildableName = "Main"
+            BlueprintName = "DiffractionMainRun"
             ReferencedContainer = "container:DiffractionMain.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -72,7 +72,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "6CD2EF2616DE19CA00B6283B"
             BuildableName = "DiffractionMain"
-            BlueprintName = "DiffractionMain"
+            BlueprintName = "DiffractionMainRun"
             ReferencedContainer = "container:DiffractionMain.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
