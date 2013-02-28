@@ -162,6 +162,12 @@ pip-log.txt
 # Mac crap
 .DS_Store
 
-
-*.txt
+#random stuff
+AdvDiffractResults.txt
+AdvFluoResults.txt
+DiffractResults.txt
+FluoResults.txt
+ProcessedScatteringData.txt
+TaAbsorbCoeff.txt
+TaFormFactor.txt
 *.pdf

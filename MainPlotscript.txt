@@ -1,0 +1,19 @@
+set term pdf
+set xlabel 'x'
+
+set ylabel 'y'
+
+set zlabel 'Energy'
+
+
+set view map
+set cbrange [4.2285:8.5485]
+set palette defined (4.2285 "red", 4.275 "blue", 5.9835 "green", 6.0455 "black", 7.3265 "orange", 7.4045 "cyan", 8.46 "yellow", 8.5485 "pink")
+
+set output "MainPlot.pdf"
+unset key
+splot "DiffractResults.txt" using 1:2:3 with points palette pt 1 ps 1, \
+	"FluoResults.txt" using 1:2:(5) with points pt 2 ps 0.3 linecolor rgb "green"
+	
+#splot "DiffractResults.txt" using 1:2:($3 < 4.9 ? $3 : 1/0) with points palette pt 0	 
+#splot "DiffractResults.txt" using 1:2:3 with points palette pt 0	 
