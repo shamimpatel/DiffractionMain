@@ -34,7 +34,6 @@ int main()
     std::map<std::string,std::string> InputData;
     AddToMapFromFile(datafile, InputData);
     datafile.close();
-    //exit(0);
 
     Vector InputCCDOrigin(110,-1,50); //origin of CCD
     Vector InputCCDNormal(0,0,1); //direction that CCD points in.
@@ -74,7 +73,7 @@ int main()
     
     for(int i = 0; i<4; i++)
     {
-        CCDCorners[i].Print();
+        cout << i << ":\t"; CCDCorners[i].Print();
         if(CCDCorners[i].x < CCDXMin)
         {
             CCDXMin = CCDCorners[i].x;
@@ -98,6 +97,12 @@ int main()
     double CrystalXLength = 0.1;
     double CrystalYLength = 0.2;
     
+    VectorFromMap("CrystalOrigin",InputData, CrystalOrigin);
+    DoubleFromMap("CrystalXLength", InputData, CrystalXLength);
+    DoubleFromMap("CrystalYLength", InputData, CrystalYLength);
+    
+    cout << "CrystalOrigin:\t"; CrystalOrigin.Print();
+    cout << "CrystalDimensions:\tX:\t" << CrystalXLength << "\tY:\t" << CrystalYLength << endl;
     
     Vector CrystalCorners[4];
     
@@ -243,9 +248,7 @@ int main()
     //DoubleFromMap("SourceZ", InputData, SourceZ);
     //DoubleFromMap("CCDZ", InputData, CCDZ);
 
-    Vector Source( -3.0f, 0.0f, 5.0);
-    
-    
+    Vector Source( -3.0f, 0.0f, 5.0);    
     VectorFromMap("Source", InputData, Source);
     double SourceZ = Source.z;
 
@@ -406,7 +409,7 @@ int main()
                                 }
                             }
                         }
-                        else if(uni() < ProbScatter) //R < ProbScatter
+                        else if(uni() < ProbScatter)
                         {
                             float RockingCurve;
                             float BraggAngle = PD.PickBraggScatteringAngle( Energy, RockingCurve);

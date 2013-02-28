@@ -16,3 +16,6 @@ MaxEnergy	9
 DeltaE		0.0005
 Repeats		6000
 RockingCurve	1
+CrystalOrigin	0,-0.1,0
+CrystalXLength	0.1
+CrystalYLength	0.2
