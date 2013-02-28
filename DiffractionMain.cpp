@@ -20,8 +20,6 @@
 
 using namespace std;
 
-#define FLU_ENABLE
-
 #ifndef base_generator_type
 typedef boost::mt11213b base_generator_type;
 #endif
@@ -207,10 +205,6 @@ int main()
     boost::variate_generator<base_generator_type&, boost::uniform_real<> > uni(generator, uni_dist);
     boost::variate_generator<base_generator_type&, boost::normal_distribution<> > normal(generator, normal_dist);
 
-#ifndef FLU_ENABLE
-    cout << "Fluorescence Disabled!" << endl;
-#endif
-
     double LatticeConst;
 
     DoubleFromMap("LatticeConstant", InputData, LatticeConst);
@@ -262,7 +256,21 @@ int main()
     long unsigned int StartTime = time(NULL);
 
     int nDiffracted = 0, nFluoresced = 0;
-
+    
+    
+    int nRepeats = 500;
+    IntFromMap("Repeats", InputData, nRepeats);
+    cout << nRepeats << " Repeats" << endl;
+    
+    long unsigned int nPhotons = 0;
+    
+    bool bRockingCurve = true;
+    int iRockingCurve;
+    IntFromMap("RockingCurve",InputData,iRockingCurve);
+    
+    bRockingCurve = int(iRockingCurve);
+    
+   
     for(float Sx = 0.0f; Sx <= 0.0f; Sx += 0.5f)
     {
         //Source.x = Sx+Originalx;
@@ -284,8 +292,13 @@ int main()
                     float PathLength = fabs(Thickness/Direction.z); //length xray takes through crystal
                     float ProbAbsorb = 1.0f - exp( -1.0f * AbsorbCoeff * PathLength);
 
-                    for(int repeat = 0; repeat < 2000; repeat++) //use 2k here for NIF poster
+                    for(int repeat = 0; repeat < nRepeats; repeat++) //use 2k here for NIF poster
                     {
+                        nPhotons++;
+                        
+                        //using R < blahblah gives clustering??
+                        //Tantalum Fluo: http://www.nist.gov/data/PDFfiles/jpcrd473.pdf
+                        //0.5 is from only creating x-rays that point upwards.
                         if(uni() < (ProbAbsorb)*0.019*0.5) //uni() < (ProbAbsorb)*0.019*0.5
                         {
                             float AbsorptionLength = (-1.0f / AbsorbCoeff) * log(uni()); //how far xray travelled into material
@@ -352,10 +365,6 @@ int main()
                                 }
                             }
                         }
-                        #ifdef FLU_ENABLE
-                        //using R < blahblah gives clustering??
-                        //Tantalum Fluo: http://www.nist.gov/data/PDFfiles/jpcrd473.pdf
-                        //0.5 is from only creating x-rays that point upwards.
                         else if(uni() < ProbScatter) //R < ProbScatter
                         {
                             float RockingCurve;
@@ -368,8 +377,18 @@ int main()
 
                             float PhiAngle = (uni() * 2.0*PI);//(UniformRand() * 1.0f) + PI-0.5f;
 
-                            float ScatterAngle = (normal()*RockingCurve + BraggAngle)*2.0; //shift from standard normal to bragg peak parameters.
+                            float ScatterAngle;// = 2.0*BraggAngle;//
 
+                            
+                            if(bRockingCurve)
+                            {
+                                ScatterAngle = (normal()*RockingCurve + BraggAngle)*2.0; //shift from standard normal to bragg peak parameters.
+                            }
+                            else
+                            {
+                                ScatterAngle = BraggAngle*2.0;
+                            }
+                            
                             //Vector ScatterDirection = ScatterUnitVector( Direction, BraggAngle*2.0, PhiAngle); //Use this for no rocking curve.
                             Vector ScatterDirection = ScatterUnitVector( Direction, ScatterAngle, PhiAngle);
 
@@ -402,8 +421,7 @@ int main()
                                     nDiffracted++;
                                 }
                             }
-                        }                        
-                        #endif
+                        }   
                     }
                 }
             }
@@ -424,6 +442,9 @@ int main()
 
     AdvDiffractResults.close();
     AdvFluoResults.close();
+    cout << nPhotons    << " Photons"   << endl;
+    cout << nDiffracted << " Diffracted photons" << endl;
+    cout << nFluoresced << " Fluoresced photons" << endl;
     
     cout << "Done!" << endl;
 

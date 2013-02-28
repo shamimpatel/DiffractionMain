@@ -15,3 +15,5 @@ CCDZ		50
 MinEnergy	3
 MaxEnergy	9
 DeltaE		0.0005
+Repeats	2000
+RockingCurve	0
