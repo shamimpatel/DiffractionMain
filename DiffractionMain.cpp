@@ -187,19 +187,19 @@ int main()
     }
 
 
-    double SolidAngleDelta = 0.005; //% tolerance for solid angle rejection. (how much we add/take away to the x&y limits)
+    double SolidAngleTolerance = 0.005; //% tolerance for solid angle rejection. (how much we add/take away to the x&y limits)
 
-    DoubleFromMap("SolidAngleDelta", InputData, SolidAngleDelta);
+    DoubleFromMap("SolidAngleTolerance", InputData, SolidAngleTolerance);
 
-    DirectionMinX -= DirectionMinX*SolidAngleDelta;
-    DirectionMinY -= DirectionMinY*SolidAngleDelta;
-    DirectionMaxX += DirectionMaxX*SolidAngleDelta;
-    DirectionMaxY += DirectionMaxY*SolidAngleDelta;
+    DirectionMinX -= DirectionMinX*SolidAngleTolerance;
+    DirectionMinY -= DirectionMinY*SolidAngleTolerance;
+    DirectionMaxX += DirectionMaxX*SolidAngleTolerance;
+    DirectionMaxY += DirectionMaxY*SolidAngleTolerance;
 
-    DirectionMinCosTheta-= DirectionMinCosTheta*SolidAngleDelta;
-    DirectionMinPhi -= DirectionMinPhi*SolidAngleDelta;
-    DirectionMaxCosTheta += DirectionMaxCosTheta*SolidAngleDelta;
-    DirectionMaxPhi += DirectionMaxPhi*SolidAngleDelta;
+    DirectionMinCosTheta-= DirectionMinCosTheta*SolidAngleTolerance;
+    DirectionMinPhi -= DirectionMinPhi*SolidAngleTolerance;
+    DirectionMaxCosTheta += DirectionMaxCosTheta*SolidAngleTolerance;
+    DirectionMaxPhi += DirectionMaxPhi*SolidAngleTolerance;
 
     cout << "Emitted ray bounds:" << endl;
     cout << "X:\t" << DirectionMinX << "\t" << DirectionMaxX << endl;
@@ -336,15 +336,84 @@ int main()
                     float PathLength = fabs(Thickness/Direction.z); //length xray takes through crystal
                     float ProbAbsorb = 1.0f - exp( -1.0f * AbsorbCoeff * PathLength);
 
+                    //float CorrectedProbScatter = ProbScatter;
+                    
+                    /*if( (1.0 - ProbAbsorb) > 0.0)
+                    {
+                        CorrectedProbScatter = ProbScatter/(1.0-ProbAbsorb);
+                    } */                   
+
+                    ProbAbsorb = ProbAbsorb/(1.0-ProbScatter); //Is this negligble? Is this even correct??
+ 
+                    
                     for(int repeat = 0; repeat < nRepeats; repeat++) //use 2k here for NIF poster
                     {
                         nPhotons++;
-                        
+                        if(uni() < ProbScatter)
+                        {
+                            float RockingCurve;
+                            float BraggAngle = PD.PickBraggScatteringAngle( Energy, RockingCurve);
+                            
+                            if(BraggAngle < 0.0f)
+                            {
+                                continue;
+                            }
+                            
+                            float PhiAngle = (uni() * 2.0*PI);//(UniformRand() * 1.0f) + PI-0.5f;
+                            
+                            float ScatterAngle;
+                            
+                            
+                            if(bRockingCurve)
+                            {
+                                ScatterAngle = (normal()*RockingCurve + BraggAngle)*2.0; //shift from standard normal to bragg peak parameters.
+                            }
+                            else
+                            {
+                                ScatterAngle = BraggAngle*2.0;
+                            }
+                            
+                            Vector ScatterDirection = ScatterUnitVector( Direction, ScatterAngle, PhiAngle);
+                            
+                            if(ScatterDirection.z <= 0.0f)
+                            {
+                                continue;
+                            }
+                            
+                            if( ScatterDirection.y > DirectionMaxY || ScatterDirection.y < DirectionMinY ||
+                               ScatterDirection.x > DirectionMaxX || ScatterDirection.x < DirectionMinX)
+                            {
+                                continue;
+                            }
+                            
+                            Vector NewSource(Source.x - (Source.z/Direction.z)*Direction.x,
+                                             Source.y - (Source.z/Direction.z)*Direction.y,
+                                             0.0f);
+                            
+                            double CCDIntersectX = NewSource.x + ((CCDZ-NewSource.z)/(ScatterDirection.z))*ScatterDirection.x; //60
+                            double CCDIntersectY = NewSource.y + ((CCDZ-NewSource.z)/(ScatterDirection.z))*ScatterDirection.y; //60
+                            
+                            if( CCDIntersectX > CCDXMin && CCDIntersectX < CCDXMax)
+                            {
+                                if( CCDIntersectY < CCDYMax && CCDIntersectY > CCDYMin)
+                                {
+                                    DiffractResults << CCDIntersectX << "\t" << CCDIntersectY << "\t" << Energy << "\t" << BraggAngle << endl;
+                                    AdvDiffractResults << NewSource.x << "\t" << NewSource.y << "\t" <<
+                                    ScatterDirection.x << "\t" << ScatterDirection.y << "\t" << ScatterDirection.z << "\t" <<
+                                    Energy << endl;
+                                    nDiffracted++;
+                                }
+                            }
+                        }
                         //using R < blahblah gives clustering??
                         //Tantalum Fluo: http://www.nist.gov/data/PDFfiles/jpcrd473.pdf
-                        //0.5 is from only creating x-rays that point upwards.
-                        if(uni() < (ProbAbsorb)*0.019*0.5)
+                        //0.5 is from only creating x-rays that point upwards.                        
+                        else if(uni() < (ProbAbsorb)*0.019*0.5) //if(uni() < (ProbAbsorb)*0.019*0.5)
                         {
+                            /*if(uni() > 0.019*0.5)
+                            {
+                                continue;
+                            }*/
                             float AbsorptionLength = (-1.0f / AbsorbCoeff) * log(uni()); //how far xray travelled into material
                             while(AbsorptionLength > PathLength)
                             {
@@ -409,7 +478,7 @@ int main()
                                 }
                             }
                         }
-                        else if(uni() < ProbScatter)
+                        /*if(uni() < ProbScatter)
                         {
                             float RockingCurve;
                             float BraggAngle = PD.PickBraggScatteringAngle( Energy, RockingCurve);
@@ -464,7 +533,7 @@ int main()
                                     nDiffracted++;
                                 }
                             }
-                        }   
+                        }*/
                     }
                 }
             }

@@ -15,5 +15,3 @@ unset key
 splot "DiffractResults.txt" using 1:2:3 with points palette pt 1 ps 1, \
 	"FluoResults.txt" using 1:2:(5) with points pt 2 ps 0.3 linecolor rgb "green"
 	
-#splot "DiffractResults.txt" using 1:2:($3 < 4.9 ? $3 : 1/0) with points palette pt 0	 
-#splot "DiffractResults.txt" using 1:2:3 with points palette pt 0	 
