@@ -1,10 +1,8 @@
-CCDOrigin	110,-1,50
-CCDNormal	0,0,1
+CCDOrigin	40,0,10
+CCDNormal	1,0,0
 CCDAngle	0
-CCDXMin		0
-CCDXMax		5
-CCDYMin		0
-CCDYMax		2
+CCDXPixelSize	0.00134765
+CCDYPixelSize	0.00134765
 SolidAngleTolerance		0.005
 DiffractionData		ProcessedScatteringData.txt
 LatticeConstant		3.31
@@ -20,5 +18,8 @@ RockingCurve	1
 CrystalOrigin	0,-0.1,0
 CrystalXLength	0.1
 CrystalYLength	0.2
-BraggAngleTolerance 0.005
-variable	beep
+BraggAngleTolerance 0.001
+CCDXSize	2.76
+CCDYSize	2.76
+TempSourceDeltaX	0.01
+TempSourceDeltaY	0.01

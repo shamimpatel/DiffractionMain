@@ -29,38 +29,19 @@ typedef boost::mt11213b base_generator_type;
 //http://www.boost.org/doc/libs/1_52_0/doc/html/boost_random/reference.html
 
 int main()
-{    
+{
     ifstream datafile("InputScript.txt");
+    if(datafile.is_open() == false)
+    {
+        cout << "Error: Failed to open InputScript.txt" << endl;
+        exit(1);
+    }
     std::map<std::string,std::string> InputData;
     AddToMapFromFile(datafile, InputData);
     datafile.close();
 
-    Vector InputCCDOrigin(110,-1,50); //origin of CCD
-    Vector InputCCDNormal(0,0,1); //direction that CCD points in.
-    double InputCCDAngle = 0;
-
-    double InputCCDXMin = 0.0;
-    double InputCCDXMax = 5.0;
-
-    double InputCCDYMin = 0.0;
-    double InputCCDYMax = 2.0;
-
-    VectorFromMap("CCDOrigin",InputData,InputCCDOrigin);
-    VectorFromMap("CCDNormal",InputData,InputCCDNormal);
-    DoubleFromMap("CCDAngle", InputData,InputCCDAngle);
-    DoubleFromMap("CCDXMin", InputData, InputCCDXMin);
-    DoubleFromMap("CCDYMin", InputData, InputCCDYMin);
-    DoubleFromMap("CCDXMax", InputData, InputCCDXMax);
-    DoubleFromMap("CCDYMax", InputData, InputCCDYMax);
-
-    cout << "CCDOrigin:\t"; InputCCDOrigin.Print();
-    cout << "CCDNormal:\t"; InputCCDNormal.Print();
-
-
-    CCD CCDCamera(InputCCDOrigin, InputCCDNormal, InputCCDAngle,
-                  0.05, 0.05,
-                  InputCCDXMin, InputCCDXMax,
-                  InputCCDYMin, InputCCDYMax);
+    
+    CCD CCDCamera = GenerateCCDFromInputScript("InputScript.txt");
 
     Vector CCDCorners[4];
 
@@ -117,8 +98,9 @@ int main()
         CrystalCorners[i].Print();
     }
     
-    double DirectionMinX = 0.0, DirectionMinY = 0.0, DirectionMaxX = 0.0, DirectionMaxY = 0.0;
+    
     double DirectionMinCosTheta = 0.0, DirectionMaxCosTheta = 0.0, DirectionMinPhi = 0.0, DirectionMaxPhi = 0.0;
+    double DirectionMinX = 5, DirectionMinY = 5, DirectionMaxX = -5, DirectionMaxY = -5;
 
 
     bool bFirstIteration = true;
@@ -196,15 +178,43 @@ int main()
     DirectionMaxX += DirectionMaxX*SolidAngleTolerance;
     DirectionMaxY += DirectionMaxY*SolidAngleTolerance;
 
-    DirectionMinCosTheta-= DirectionMinCosTheta*SolidAngleTolerance;
+    DirectionMinCosTheta -= DirectionMinCosTheta*SolidAngleTolerance;
     DirectionMinPhi -= DirectionMinPhi*SolidAngleTolerance;
     DirectionMaxCosTheta += DirectionMaxCosTheta*SolidAngleTolerance;
     DirectionMaxPhi += DirectionMaxPhi*SolidAngleTolerance;
-
+   
+    
+    /*
+    
+    Vector DummyDirection( acos(DirectionMinCosTheta), DirectionMinPhi, true, true);
+    if(DummyDirection.x < DirectionMinX) { DirectionMinX = DummyDirection.x; }
+    if(DummyDirection.x > DirectionMaxX) { DirectionMaxX = DummyDirection.x; }
+    if(DummyDirection.y < DirectionMinY) { DirectionMinY = DummyDirection.y; }
+    if(DummyDirection.y > DirectionMaxY) { DirectionMaxY = DummyDirection.y; }
+    DummyDirection = Vector( acos(DirectionMinCosTheta), DirectionMaxPhi, true, true);
+    if(DummyDirection.x < DirectionMinX) { DirectionMinX = DummyDirection.x; }
+    if(DummyDirection.x > DirectionMaxX) { DirectionMaxX = DummyDirection.x; }
+    if(DummyDirection.y < DirectionMinY) { DirectionMinY = DummyDirection.y; }
+    if(DummyDirection.y > DirectionMaxY) { DirectionMaxY = DummyDirection.y; }
+    DummyDirection = Vector( acos(DirectionMaxCosTheta), DirectionMinPhi, true, true);
+    if(DummyDirection.x < DirectionMinX) { DirectionMinX = DummyDirection.x; }
+    if(DummyDirection.x > DirectionMaxX) { DirectionMaxX = DummyDirection.x; }
+    if(DummyDirection.y < DirectionMinY) { DirectionMinY = DummyDirection.y; }
+    if(DummyDirection.y > DirectionMaxY) { DirectionMaxY = DummyDirection.y; }
+    DummyDirection = Vector( acos(DirectionMaxCosTheta), DirectionMaxPhi, true, true);
+    if(DummyDirection.x < DirectionMinX) { DirectionMinX = DummyDirection.x; }
+    if(DummyDirection.x > DirectionMaxX) { DirectionMaxX = DummyDirection.x; }
+    if(DummyDirection.y < DirectionMinY) { DirectionMinY = DummyDirection.y; }
+    if(DummyDirection.y > DirectionMaxY) { DirectionMaxY = DummyDirection.y; }
+     
+     
+    */
+  
     cout << "Emitted ray bounds:" << endl;
     cout << "X:\t" << DirectionMinX << "\t" << DirectionMaxX << endl;
     cout << "Y:\t" << DirectionMinY << "\t" << DirectionMaxY << endl;
-
+    
+    
     cout << "CosTheta:\t" << DirectionMinCosTheta << "\t" << DirectionMaxCosTheta << endl;
     cout << "Phi:\t" << DirectionMinPhi << "\t" << DirectionMaxPhi << endl;
 
@@ -243,7 +253,7 @@ int main()
     ofstream AdvDiffractResults( "AdvDiffractResults.txt");
     ofstream AdvFluoResults( "AdvFluoResults.txt" );
 
-    double CCDZ = InputCCDOrigin.z;
+    double CCDZ = CCDCamera.CCDOrigin.z;
 
     //DoubleFromMap("SourceZ", InputData, SourceZ);
     //DoubleFromMap("CCDZ", InputData, CCDZ);
@@ -266,7 +276,7 @@ int main()
     double minSourceDirectionX = (CrystalOrigin - Source).x;
     double maxSourceDirectionX = minSourceDirectionX + CrystalXLength;
     double DeltaSourceDirectionX        = 0.01;
-    
+    DoubleFromMap("TempSourceDeltaX", InputData, DeltaSourceDirectionX);
     
     if(minSourceDirectionX > maxSourceDirectionX)
     {
@@ -280,7 +290,8 @@ int main()
     double minSourceDirectionY = (CrystalOrigin - Source).y;
     double maxSourceDirectionY = minSourceDirectionY + CrystalYLength;
     double DeltaSourceDirectionY        = 0.01;
-    
+    DoubleFromMap("TempSourceDeltaY", InputData, DeltaSourceDirectionY);
+
     
     if(minSourceDirectionY > maxSourceDirectionY)
     {
@@ -380,8 +391,21 @@ int main()
                                 continue;
                             }
                             
-                            if( ScatterDirection.y > DirectionMaxY || ScatterDirection.y < DirectionMinY ||
+                            float CosTheta = cos(ScatterDirection.GetTheta());
+                            float Phi = ScatterDirection.GetPhi();
+                            
+                            /*if( ScatterDirection.y > DirectionMaxY || ScatterDirection.y < DirectionMinY ||
                                ScatterDirection.x > DirectionMaxX || ScatterDirection.x < DirectionMinX)
+                            {
+                                continue;
+                            }*/
+                            
+                            if(CosTheta < DirectionMinCosTheta || CosTheta > DirectionMaxCosTheta)
+                            {
+                                continue;
+                            }
+                            
+                            if(Phi < DirectionMinPhi || Phi > DirectionMaxPhi)
                             {
                                 continue;
                             }
@@ -393,7 +417,7 @@ int main()
                             double CCDIntersectX = NewSource.x + ((CCDZ-NewSource.z)/(ScatterDirection.z))*ScatterDirection.x; //60
                             double CCDIntersectY = NewSource.y + ((CCDZ-NewSource.z)/(ScatterDirection.z))*ScatterDirection.y; //60
                             
-                            if( CCDIntersectX > CCDXMin && CCDIntersectX < CCDXMax)
+                            /*if( CCDIntersectX > CCDXMin && CCDIntersectX < CCDXMax)
                             {
                                 if( CCDIntersectY < CCDYMax && CCDIntersectY > CCDYMin)
                                 {
@@ -403,9 +427,13 @@ int main()
                                     Energy << endl;
                                     nDiffracted++;
                                 }
-                            }
+                            }*/
+                            DiffractResults << CCDIntersectX << "\t" << CCDIntersectY << "\t" << Energy << "\t" << BraggAngle << endl;
+                            AdvDiffractResults << NewSource.x << "\t" << NewSource.y << "\t" <<
+                            ScatterDirection.x << "\t" << ScatterDirection.y << "\t" << ScatterDirection.z << "\t" <<
+                            Energy << endl;
+                            nDiffracted++;
                         }
-                        //using R < blahblah gives clustering??
                         //Tantalum Fluo: http://www.nist.gov/data/PDFfiles/jpcrd473.pdf
                         //0.5 is from only creating x-rays that point upwards.                        
                         else if(uni() < (ProbAbsorb)*0.019*0.5) //if(uni() < (ProbAbsorb)*0.019*0.5)
@@ -467,7 +495,7 @@ int main()
                             double CCDIntersectX = NewSource.x + ((CCDZ-NewSource.z)/(EmitDirection.z))*EmitDirection.x;
                             double CCDIntersectY = NewSource.y + ((CCDZ-NewSource.z)/(EmitDirection.z))*EmitDirection.y;
 
-                            if( CCDIntersectX > CCDXMin && CCDIntersectX < CCDXMax)
+                            /*if( CCDIntersectX > CCDXMin && CCDIntersectX < CCDXMax)
                             {
                                 if( CCDIntersectY < CCDYMax && CCDIntersectY > CCDYMin)
                                 {
@@ -476,64 +504,12 @@ int main()
                                     EmitDirection.x << "\t" << EmitDirection.y << "\t" << EmitDirection.z << "\t" << endl;
                                     nFluoresced++;
                                 }
-                            }
-                        }
-                        /*if(uni() < ProbScatter)
-                        {
-                            float RockingCurve;
-                            float BraggAngle = PD.PickBraggScatteringAngle( Energy, RockingCurve);
-
-                            if(BraggAngle < 0.0f)
-                            {
-                                continue;
-                            }
-
-                            float PhiAngle = (uni() * 2.0*PI);//(UniformRand() * 1.0f) + PI-0.5f;
-
-                            float ScatterAngle;// = 2.0*BraggAngle;//
-
-                            
-                            if(bRockingCurve)
-                            {
-                                ScatterAngle = (normal()*RockingCurve + BraggAngle)*2.0; //shift from standard normal to bragg peak parameters.
-                            }
-                            else
-                            {
-                                ScatterAngle = BraggAngle*2.0;
-                            }
-                            
-                            Vector ScatterDirection = ScatterUnitVector( Direction, ScatterAngle, PhiAngle);
-
-                            if(ScatterDirection.z <= 0.0f)
-                            {
-                                continue;
-                            }
-
-                            if( ScatterDirection.y > DirectionMaxY || ScatterDirection.y < DirectionMinY ||
-                                    ScatterDirection.x > DirectionMaxX || ScatterDirection.x < DirectionMinX)
-                            {
-                                continue;
-                            }
-
-                            Vector NewSource(Source.x - (Source.z/Direction.z)*Direction.x,
-                                             Source.y - (Source.z/Direction.z)*Direction.y,
-                                             0.0f);
-
-                            double CCDIntersectX = NewSource.x + ((CCDZ-NewSource.z)/(ScatterDirection.z))*ScatterDirection.x; //60
-                            double CCDIntersectY = NewSource.y + ((CCDZ-NewSource.z)/(ScatterDirection.z))*ScatterDirection.y; //60
-
-                            if( CCDIntersectX > CCDXMin && CCDIntersectX < CCDXMax)
-                            {
-                                if( CCDIntersectY < CCDYMax && CCDIntersectY > CCDYMin)
-                                {
-                                    DiffractResults << CCDIntersectX << "\t" << CCDIntersectY << "\t" << Energy << "\t" << BraggAngle << endl;
-                                    AdvDiffractResults << NewSource.x << "\t" << NewSource.y << "\t" <<
-                                    ScatterDirection.x << "\t" << ScatterDirection.y << "\t" << ScatterDirection.z << "\t" <<
-                                    Energy << endl;
-                                    nDiffracted++;
-                                }
-                            }
-                        }*/
+                            }*/
+                            FluoResults << CCDIntersectX << "\t" << CCDIntersectY << endl;
+                            AdvFluoResults << NewSource.x << "\t" << NewSource.y << "\t" <<
+                            EmitDirection.x << "\t" << EmitDirection.y << "\t" << EmitDirection.z << "\t" << endl;
+                            nFluoresced++;
+                        }                        
                     }
                 }
             }
