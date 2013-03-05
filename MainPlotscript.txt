@@ -7,8 +7,8 @@ set zlabel 'Energy'
 
 
 set view map
-set cbrange [4.2285:8.5485]
-set palette defined (4.2285 "red", 4.275 "blue", 5.9835 "green", 6.0455 "black", 7.3265 "orange", 7.4045 "cyan", 8.46 "yellow", 8.5485 "pink")
+set cbrange [4.4289:9.99945]
+set palette defined (4.4289 "red", 4.92886 "blue", 6.26276 "green", 6.97071 "black", 7.67066 "orange", 8.53685 "cyan", 8.85698 "yellow", 9.85839 "pink", 9.90241 "red", 9.99945 "blue")
 
 set output "MainPlot.pdf"
 unset key
