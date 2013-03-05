@@ -1,8 +1,6 @@
 CCDOrigin	40,0,10
 CCDNormal	1,0,0
 CCDAngle	0
-CCDXPixelSize	0.00134765
-CCDYPixelSize	0.00134765
 SolidAngleTolerance		0.005
 DiffractionData		ProcessedScatteringData.txt
 LatticeConstant		3.31
@@ -23,3 +21,5 @@ CCDXSize	2.76
 CCDYSize	2.76
 TempSourceDeltaX	0.01
 TempSourceDeltaY	0.01
+CCDNumXPixels	2048
+CCDNumYPixels	2048
