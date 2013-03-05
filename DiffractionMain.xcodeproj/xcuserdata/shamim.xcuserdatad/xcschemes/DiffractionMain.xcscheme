@@ -64,7 +64,8 @@
    <ProfileAction
       shouldUseLaunchSchemeArgsEnv = "YES"
       savedToolIdentifier = ""
-      useCustomWorkingDirectory = "NO"
+      useCustomWorkingDirectory = "YES"
+      customWorkingDirectory = "/Users/shamim/Documents/Code/SPEDXSim/DiffractionMain"
       buildConfiguration = "Release"
       debugDocumentVersioning = "YES">
       <BuildableProductRunnable>
