@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "6CD2EF2616DE19CA00B6283B"
-               BuildableName = "DiffractionMain"
+               BuildableName = "DiffractionMainRun"
                BlueprintName = "DiffractionMainRun"
                ReferencedContainer = "container:DiffractionMain.xcodeproj">
             </BuildableReference>
@@ -33,7 +33,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "6CD2EF2616DE19CA00B6283B"
-            BuildableName = "DiffractionMain"
+            BuildableName = "DiffractionMainRun"
             BlueprintName = "DiffractionMainRun"
             ReferencedContainer = "container:DiffractionMain.xcodeproj">
          </BuildableReference>
@@ -53,7 +53,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "6CD2EF2616DE19CA00B6283B"
-            BuildableName = "Main"
+            BuildableName = "DiffractionMainRun"
             BlueprintName = "DiffractionMainRun"
             ReferencedContainer = "container:DiffractionMain.xcodeproj">
          </BuildableReference>
@@ -72,7 +72,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "6CD2EF2616DE19CA00B6283B"
-            BuildableName = "DiffractionMain"
+            BuildableName = "DiffractionMainRun"
             BlueprintName = "DiffractionMainRun"
             ReferencedContainer = "container:DiffractionMain.xcodeproj">
          </BuildableReference>
