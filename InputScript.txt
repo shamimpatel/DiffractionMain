@@ -11,7 +11,7 @@ Source		-3,0,5
 MinEnergy	3
 MaxEnergy	9
 DeltaE		0.0005
-Repeats		5000
+Repeats		20000
 RockingCurve	0
 CrystalOrigin	-0.05,-0.05,0
 CrystalXLength	0.1
