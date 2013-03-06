@@ -317,6 +317,10 @@ int main()
     IntFromMap("RockingCurve",InputData,iRockingCurve);
     
     bRockingCurve = int(iRockingCurve);
+    if(!bRockingCurve)
+    {
+        cout << "Rocking Curve Disabled" << endl;
+    }
     
     int nDiffracted = 0, nFluoresced = 0;
     
