@@ -1,5 +1,5 @@
-CCDOrigin	40,0,10
-CCDNormal	40,0,10
+CCDOrigin	40,0,30
+CCDNormal	40,0,30
 CCDAngle	0
 SolidAngleTolerance		0.005
 DiffractionData		ProcessedScatteringData.txt
@@ -11,7 +11,7 @@ Source		-3,0,5
 MinEnergy	3
 MaxEnergy	9
 DeltaE		0.0005
-Repeats		20000
+Repeats		5000
 RockingCurve	0
 CrystalOrigin	-0.05,-0.05,0
 CrystalXLength	0.1
@@ -23,5 +23,7 @@ TempSourceDeltaX	0.01
 TempSourceDeltaY	0.01
 CCDNumXPixels	20048
 CCDNumYPixels	20048
-PinholeRadius	0.04
+PinholeRadius	0.01
 TempPinholeDistance	1.0
+FlipXAxis	0
+FlipYAxis	0
