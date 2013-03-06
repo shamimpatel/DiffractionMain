@@ -182,34 +182,7 @@ int main()
     DirectionMinPhi -= DirectionMinPhi*SolidAngleTolerance;
     DirectionMaxCosTheta += DirectionMaxCosTheta*SolidAngleTolerance;
     DirectionMaxPhi += DirectionMaxPhi*SolidAngleTolerance;
-   
-    
-    /*
-    
-    Vector DummyDirection( acos(DirectionMinCosTheta), DirectionMinPhi, true, true);
-    if(DummyDirection.x < DirectionMinX) { DirectionMinX = DummyDirection.x; }
-    if(DummyDirection.x > DirectionMaxX) { DirectionMaxX = DummyDirection.x; }
-    if(DummyDirection.y < DirectionMinY) { DirectionMinY = DummyDirection.y; }
-    if(DummyDirection.y > DirectionMaxY) { DirectionMaxY = DummyDirection.y; }
-    DummyDirection = Vector( acos(DirectionMinCosTheta), DirectionMaxPhi, true, true);
-    if(DummyDirection.x < DirectionMinX) { DirectionMinX = DummyDirection.x; }
-    if(DummyDirection.x > DirectionMaxX) { DirectionMaxX = DummyDirection.x; }
-    if(DummyDirection.y < DirectionMinY) { DirectionMinY = DummyDirection.y; }
-    if(DummyDirection.y > DirectionMaxY) { DirectionMaxY = DummyDirection.y; }
-    DummyDirection = Vector( acos(DirectionMaxCosTheta), DirectionMinPhi, true, true);
-    if(DummyDirection.x < DirectionMinX) { DirectionMinX = DummyDirection.x; }
-    if(DummyDirection.x > DirectionMaxX) { DirectionMaxX = DummyDirection.x; }
-    if(DummyDirection.y < DirectionMinY) { DirectionMinY = DummyDirection.y; }
-    if(DummyDirection.y > DirectionMaxY) { DirectionMaxY = DummyDirection.y; }
-    DummyDirection = Vector( acos(DirectionMaxCosTheta), DirectionMaxPhi, true, true);
-    if(DummyDirection.x < DirectionMinX) { DirectionMinX = DummyDirection.x; }
-    if(DummyDirection.x > DirectionMaxX) { DirectionMaxX = DummyDirection.x; }
-    if(DummyDirection.y < DirectionMinY) { DirectionMinY = DummyDirection.y; }
-    if(DummyDirection.y > DirectionMaxY) { DirectionMaxY = DummyDirection.y; }
-     
-     
-    */
-  
+
     cout << "Emitted ray bounds:" << endl;
     cout << "X:\t" << DirectionMinX << "\t" << DirectionMaxX << endl;
     cout << "Y:\t" << DirectionMinY << "\t" << DirectionMaxY << endl;
