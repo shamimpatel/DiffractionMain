@@ -337,11 +337,11 @@ int main()
             float ProbScatter = PD.GetModifiedScatterProb(Energy);
             float AbsorbCoeff = TaMuData.GetAbsorbCoeffDataPoint( EnergyToWavelength(Energy) );
             //for( double x = 3; x <= 3.1; x += 0.01)
-            for(int iXDirectionCounter = 0; iXDirectionCounter < nDirectionXPoints; iXDirectionCounter++)
+            for(int iXDirectionCounter = 0; iXDirectionCounter <= nDirectionXPoints; iXDirectionCounter++)
             {
                 double x = minSourceDirectionX + DeltaSourceDirectionX*iXDirectionCounter;
                 //for( double y = -0.1; y <= 0.1; y += 0.01)
-                for(int iYDirectionCounter = 0; iYDirectionCounter < nDirectionYPoints; iYDirectionCounter++)
+                for(int iYDirectionCounter = 0; iYDirectionCounter <= nDirectionYPoints; iYDirectionCounter++)
                 {
                     double y = minSourceDirectionY + DeltaSourceDirectionY*iYDirectionCounter;
                     //construct a vector that goes down SourceZ units and across a variable amount
@@ -381,7 +381,8 @@ int main()
                             
                             if(bRockingCurve)
                             {
-                                ScatterAngle = (normal()*RockingCurve + BraggAngle)*2.0; //shift from standard normal to bragg peak parameters.
+                                //width is for peak at 2theta (not at bragg angle) so no need to multiply by 2.
+                                ScatterAngle = normal()*RockingCurve + BraggAngle*2.0; //shift from standard normal to bragg peak parameters.
                             }
                             else
                             {
