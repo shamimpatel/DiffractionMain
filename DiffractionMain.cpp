@@ -274,7 +274,7 @@ int main()
     cout << "Y Source Ranges:\t" << minSourceDirectionY << "\t" << maxSourceDirectionY << endl;
     
     
-    int nDirectionXPoints = (maxSourceDirectionX - minSourceDirectionX)/DeltaSourceDirectionX; //this is a truncation not a rounding operation so likely to get one less point.
+    int nDirectionXPoints = (maxSourceDirectionX - minSourceDirectionX)/DeltaSourceDirectionX; 
     int nDirectionYPoints = (maxSourceDirectionY - minSourceDirectionY)/DeltaSourceDirectionY;
     
    
