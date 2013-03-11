@@ -38,7 +38,8 @@
 
 /* Begin PBXFileReference section */
 		6C12027B16DF732A00690295 /* DiffractionMainRun */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; name = DiffractionMainRun; path = "../../../../../Library/Developer/Xcode/DerivedData/SPEDXSim-ftdmncttqlednuahdomyuuuyfebv/Build/Products/Release/DiffractionMainRun"; sourceTree = "<group>"; };
-		6CD2EF2716DE19CA00B6283B /* Main */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; name = Main; path = /Users/shamim/Documents/Code/SPEDXSim/DiffractionMain/build/Release/Main; sourceTree = "<absolute>"; };
+		6CAA26C416E7426B004D257C /* DiffractionMainRun */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = DiffractionMainRun; sourceTree = BUILT_PRODUCTS_DIR; };
+		6CAA26DD16E89E36004D257C /* SpectrumData.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SpectrumData.h; path = /Users/shamim/Documents/Code/SPEDXSim/DiffractionProbabilities/../../Include/SpectrumData.h; sourceTree = "<absolute>"; };
 		6CD2EF2C16DE19CA00B6283B /* DiffractionMain.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = DiffractionMain.1; sourceTree = "<group>"; };
 		6CD2EF3516DE1C2C00B6283B /* DiffractionMain.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DiffractionMain.cpp; sourceTree = SOURCE_ROOT; };
 		6CD2EF3816DE221800B6283B /* AbsorbCoeffData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AbsorbCoeffData.h; path = ../../../Include/AbsorbCoeffData.h; sourceTree = "<group>"; };
@@ -67,6 +68,7 @@
 			children = (
 				6CD2EF3716DE220900B6283B /* Headers */,
 				6CD2EF2916DE19CA00B6283B /* DiffractionMain */,
+				6CAA26C416E7426B004D257C /* DiffractionMainRun */,
 			);
 			sourceTree = "<group>";
 		};
@@ -83,6 +85,7 @@
 		6CD2EF3716DE220900B6283B /* Headers */ = {
 			isa = PBXGroup;
 			children = (
+				6CAA26DD16E89E36004D257C /* SpectrumData.h */,
 				6CD2EF3816DE221800B6283B /* AbsorbCoeffData.h */,
 				6CD2EF3916DE221800B6283B /* CCD.h */,
 				6CD2EF3A16DE221800B6283B /* FileReading.h */,
@@ -114,7 +117,7 @@
 			);
 			name = DiffractionMainRun;
 			productName = DiffractionMain;
-			productReference = 6CD2EF2716DE19CA00B6283B /* Main */;
+			productReference = 6CAA26C416E7426B004D257C /* DiffractionMainRun */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */

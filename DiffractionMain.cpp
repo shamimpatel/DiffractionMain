@@ -17,6 +17,7 @@
 #include <boost/random/normal_distribution.hpp>
 #include "CCD.h"
 #include "FileReading.h"
+#include "SpectrumData.h"
 
 using namespace std;
 
@@ -295,6 +296,14 @@ int main()
         cout << "Rocking Curve Disabled" << endl;
     }
     
+    
+    std::string SpectrumDataFilename;
+    
+    StringFromMap("SpectrumData", InputData, SpectrumDataFilename);
+    SpectrumData Spectrum( MinE, MaxE, 5000 );
+    Spectrum.LoadData("SourceSpectrum.txt");
+    
+    
     int nDiffracted = 0, nFluoresced = 0;
     
     long unsigned int StartTime = time(NULL);
@@ -307,6 +316,10 @@ int main()
         for( int EnergyTick = 0; EnergyTick < nEPoints; EnergyTick++)
         {
             double Energy = MinE + DeltaE*EnergyTick;
+            
+            double RelativeSourceIntensity = Spectrum.GetSpectrumDataPoint(Energy);
+            int CorrectedRepeats = floor(RelativeSourceIntensity*double(nRepeats) + 0.5);
+            
             float ProbScatter = PD.GetModifiedScatterProb(Energy);
             float AbsorbCoeff = TaMuData.GetAbsorbCoeffDataPoint( EnergyToWavelength(Energy) );
             //for( double x = 3; x <= 3.1; x += 0.01)
@@ -334,7 +347,7 @@ int main()
                     ProbAbsorb = ProbAbsorb/(1.0-ProbScatter); //Is this negligble? Is this even correct??
  
                     
-                    for(int repeat = 0; repeat < nRepeats; repeat++) //use 2k here for NIF poster
+                    for(int repeat = 0; repeat < CorrectedRepeats; repeat++) //use 2k here for NIF poster
                     {
                         nPhotons++;
                         if(uni() < ProbScatter)

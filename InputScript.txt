@@ -27,3 +27,4 @@ PinholeRadius	0.01
 TempPinholeDistance	1.0
 FlipXAxis	0
 FlipYAxis	0
+SpectrumData	SourceSpectrum.txt
