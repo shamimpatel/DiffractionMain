@@ -18,6 +18,9 @@
 #include "CCD.h"
 #include "FileReading.h"
 #include "SpectrumData.h"
+#include "MPIUtils.h"
+
+#include "mpi.h"
 
 using namespace std;
 
@@ -26,11 +29,28 @@ typedef boost::mt11213b base_generator_type;
 #endif
 
 
+
+struct EnergyWorkUnit
+{
+    unsigned long int StartEnergyTick, EndEnergyTick;
+};
+
+
 //http://www.boost.org/doc/libs/1_46_1/libs/random/example/random_demo.cpp
 //http://www.boost.org/doc/libs/1_52_0/doc/html/boost_random/reference.html
 
-int main()
+int main(int argc, char *argv[])
 {
+    
+    
+    MPI_Init(&argc,&argv);
+        
+    int NumProcessors, ProcessorId;
+    MPI_Comm_size(MPI_COMM_WORLD,&NumProcessors);
+    MPI_Comm_rank(MPI_COMM_WORLD,&ProcessorId);
+    
+    
+    
     ifstream datafile("InputScript.txt");
     if(datafile.is_open() == false)
     {
@@ -193,11 +213,14 @@ int main()
     cout << "Phi:\t" << DirectionMinPhi << "\t" << DirectionMaxPhi << endl;
 
 
-    base_generator_type generator(42u);
+    base_generator_type generator(42580*(ProcessorId+500));
+    
+    
     boost::uniform_real<> uni_dist(0,1);
     boost::normal_distribution<> normal_dist(0,1);
     boost::variate_generator<base_generator_type&, boost::uniform_real<> > uni(generator, uni_dist);
     boost::variate_generator<base_generator_type&, boost::normal_distribution<> > normal(generator, normal_dist);
+    
 
     double LatticeConst;
 
@@ -220,12 +243,17 @@ int main()
     DoubleFromMap("CrystalThickness", InputData, Thickness);
 
     //simple detector at X/Y plane
-    ofstream DiffractResults( "DiffractResults.txt" );
-    ofstream FluoResults( "FluoResults.txt" );
+    //ofstream DiffractResults( "DiffractResults.txt" );
+    //ofstream FluoResults( "FluoResults.txt" );
+    ofstream DiffractResults( CreateProcessorUniqueFilename("DiffractResults", ".txt") );
+    ofstream FluoResults( CreateProcessorUniqueFilename("FluoResults", ".txt") );
+    
 
     //full ray information
-    ofstream AdvDiffractResults( "AdvDiffractResults.txt");
-    ofstream AdvFluoResults( "AdvFluoResults.txt" );
+    //ofstream AdvDiffractResults( "AdvDiffractResults.txt");
+    //ofstream AdvFluoResults( "AdvFluoResults.txt" );
+    ofstream AdvDiffractResults( CreateProcessorUniqueFilename("AdvDiffractResults", ".txt"));
+    ofstream AdvFluoResults( CreateProcessorUniqueFilename("AdvFluoResults", ".txt") );
 
     double CCDZ = CCDCamera.CCDOrigin.z;
 
@@ -309,9 +337,32 @@ int main()
     long unsigned int StartTime = time(NULL);
     
 
+    if(ProcessorId == 0)
+    {
+        unsigned long int WorkSize = nEPoints/NumProcessors;
+        
+        for(unsigned long int i=0;i<NumProcessors;i++)
+        {
+            EnergyWorkUnit Work;
+            Work.StartEnergyTick = i * WorkSize;
+            Work.EndEnergyTick = (i+1) * WorkSize;
+            if( i == (NumProcessors - 1) ) //do this so we get the final energy loop for the last core
+            {
+                Work.EndEnergyTick++;
+            }
+            MPI_Send(&Work, sizeof(EnergyWorkUnit), MPI_BYTE, int(i), 0, MPI_COMM_WORLD);
+        }
+    }
+    
+    MPI_Status Stat;
+    EnergyWorkUnit WorkToDo;    
+    MPI_Recv(&WorkToDo, sizeof(EnergyWorkUnit), MPI_BYTE, 0, 0, MPI_COMM_WORLD, &Stat);
+    cout << ProcessorId << ":\t" << WorkToDo.StartEnergyTick << "  -->  " << WorkToDo.EndEnergyTick << endl;
+    
+    
     float ProgressCounter = 0.0f;
     
-    for( int EnergyTick = 0; EnergyTick < nEPoints; EnergyTick++)
+    for( unsigned long int EnergyTick = WorkToDo.StartEnergyTick; EnergyTick < WorkToDo.EndEnergyTick; EnergyTick++)
     {
         double Energy = MinE + DeltaE*EnergyTick;
         
@@ -503,12 +554,13 @@ int main()
             }
         }
         
-        float Progress = float(EnergyTick)/float(nEPoints);
+        float Progress = float(EnergyTick - WorkToDo.StartEnergyTick)/float(WorkToDo.EndEnergyTick - WorkToDo.StartEnergyTick);
         
         if(Progress > ProgressCounter)
         {
             int ElapsedTime = int(time(NULL) - StartTime);
-            cout << "Progress: " << Progress*100.0f << "%\t E = " << Energy << "\t(" << ElapsedTime << "s)"<< endl;
+            printf( "Proc %d: Progress: %.0f%%\tE = %.3f\t(%is)\n", ProcessorId, Progress*100.0, Energy, ElapsedTime); //output looks nicer this way
+            //cout << "Proc " << ProcessorId << ": Progress: " << Progress*100.0f << "%\t E = " << Energy << "\t(" << ElapsedTime << "s)"<< endl;
             ProgressCounter += 0.01f;
         }
     }
@@ -519,11 +571,16 @@ int main()
 
     AdvDiffractResults.close();
     AdvFluoResults.close();
+    
+    
     cout << nPhotons    << " Photons"   << endl;
     cout << nDiffracted << " Diffracted photons" << endl;
     cout << nFluoresced << " Fluoresced photons" << endl;
     
     cout << "Done!" << endl;
 
+    
+    
+    MPI_Finalize();    
     return 0;
 }
