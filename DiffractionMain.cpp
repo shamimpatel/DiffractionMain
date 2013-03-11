@@ -50,7 +50,6 @@ int main(int argc, char *argv[])
     MPI_Comm_rank(MPI_COMM_WORLD,&ProcessorId);
     
     
-    
     ifstream datafile("InputScript.txt");
     if(datafile.is_open() == false)
     {
@@ -416,7 +415,7 @@ int main(int argc, char *argv[])
                         
                         if(bRockingCurve)
                         {
-                            //width is for peak at 2theta (not at bragg angle) so no need to multiply by 2.
+                            //width is for peak at 2theta (not at bragg angle) so no need to multiply it by 2.
                             ScatterAngle = normal()*RockingCurve + BraggAngle*2.0; //shift from standard normal to bragg peak parameters.
                         }
                         else
@@ -573,14 +572,26 @@ int main(int argc, char *argv[])
     AdvFluoResults.close();
     
     
-    cout << nPhotons    << " Photons"   << endl;
-    cout << nDiffracted << " Diffracted photons" << endl;
-    cout << nFluoresced << " Fluoresced photons" << endl;
+    cout << "Proc " << ProcessorId << ": " <<  nPhotons    << " Photons"   << endl;
+    cout << "Proc " << ProcessorId << ": " <<  nDiffracted << " Diffracted photons" << endl;
+    cout << "Proc " << ProcessorId << ": " <<  nFluoresced << " Fluoresced photons" << endl;
     
     cout << "Done!" << endl;
 
+    MPI_Barrier(MPI_COMM_WORLD);
+    
+    //cat DiffractResults_P0.txt DiffractResults_P1.txt DiffractResults_P2.txt DiffractResults_P3.txt > DiffractResults.txt
+    if( ProcessorId == 0)
+    {
+        system(CreateConcatCommand("DiffractResults", ".txt").c_str());
+        system(CreateConcatCommand("AdvDiffractResults", ".txt").c_str());
+        system(CreateConcatCommand("FluoResults", ".txt").c_str());
+        system(CreateConcatCommand("AdvFluoResults", ".txt").c_str());
+    }
+
+    MPI_Finalize();
     
     
-    MPI_Finalize();    
+    
     return 0;
 }
