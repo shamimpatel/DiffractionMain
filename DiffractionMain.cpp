@@ -308,213 +308,211 @@ int main()
     
     long unsigned int StartTime = time(NULL);
     
-    for(float Sx = 0.0f; Sx <= 0.0f; Sx += 0.5f)
+
+    float ProgressCounter = 0.0f;
+    
+    for( int EnergyTick = 0; EnergyTick < nEPoints; EnergyTick++)
     {
-        //Source.x = Sx+Originalx;
-        float ProgressCounter = 0.0f;
-
-        for( int EnergyTick = 0; EnergyTick < nEPoints; EnergyTick++)
+        double Energy = MinE + DeltaE*EnergyTick;
+        
+        double RelativeSourceIntensity = Spectrum.GetSpectrumDataPoint(Energy);
+        int CorrectedRepeats = floor(RelativeSourceIntensity*double(nRepeats) + 0.5);
+        
+        float ProbScatter = PD.GetModifiedScatterProb(Energy);
+        float AbsorbCoeff = TaMuData.GetAbsorbCoeffDataPoint( EnergyToWavelength(Energy) );
+        //for( double x = 3; x <= 3.1; x += 0.01)
+        for(int iXDirectionCounter = 0; iXDirectionCounter <= nDirectionXPoints; iXDirectionCounter++)
         {
-            double Energy = MinE + DeltaE*EnergyTick;
-            
-            double RelativeSourceIntensity = Spectrum.GetSpectrumDataPoint(Energy);
-            int CorrectedRepeats = floor(RelativeSourceIntensity*double(nRepeats) + 0.5);
-            
-            float ProbScatter = PD.GetModifiedScatterProb(Energy);
-            float AbsorbCoeff = TaMuData.GetAbsorbCoeffDataPoint( EnergyToWavelength(Energy) );
-            //for( double x = 3; x <= 3.1; x += 0.01)
-            for(int iXDirectionCounter = 0; iXDirectionCounter <= nDirectionXPoints; iXDirectionCounter++)
+            double x = minSourceDirectionX + DeltaSourceDirectionX*iXDirectionCounter;
+            //for( double y = -0.1; y <= 0.1; y += 0.01)
+            for(int iYDirectionCounter = 0; iYDirectionCounter <= nDirectionYPoints; iYDirectionCounter++)
             {
-                double x = minSourceDirectionX + DeltaSourceDirectionX*iXDirectionCounter;
-                //for( double y = -0.1; y <= 0.1; y += 0.01)
-                for(int iYDirectionCounter = 0; iYDirectionCounter <= nDirectionYPoints; iYDirectionCounter++)
+                double y = minSourceDirectionY + DeltaSourceDirectionY*iYDirectionCounter;
+                //construct a vector that goes down SourceZ units and across a variable amount
+                Vector Direction( x, y, -1.0*SourceZ);
+                Direction = Direction.Normalized();
+                
+                float PathLength = fabs(Thickness/Direction.z); //length xray takes through crystal
+                float ProbAbsorb = 1.0f - exp( -1.0f * AbsorbCoeff * PathLength);
+                
+                //float CorrectedProbScatter = ProbScatter;
+                
+                /*if( (1.0 - ProbAbsorb) > 0.0)
+                 {
+                 CorrectedProbScatter = ProbScatter/(1.0-ProbAbsorb);
+                 } */
+                
+                ProbAbsorb = ProbAbsorb/(1.0-ProbScatter); //Is this negligble? Is this even correct??
+                
+                
+                for(int repeat = 0; repeat < CorrectedRepeats; repeat++) //use 2k here for NIF poster
                 {
-                    double y = minSourceDirectionY + DeltaSourceDirectionY*iYDirectionCounter;
-                    //construct a vector that goes down SourceZ units and across a variable amount
-                    Vector Direction( x, y, -1.0*SourceZ);
-                    Direction = Direction.Normalized();
-
-                    float PathLength = fabs(Thickness/Direction.z); //length xray takes through crystal
-                    float ProbAbsorb = 1.0f - exp( -1.0f * AbsorbCoeff * PathLength);
-
-                    //float CorrectedProbScatter = ProbScatter;
-                    
-                    /*if( (1.0 - ProbAbsorb) > 0.0)
+                    nPhotons++;
+                    if(uni() < ProbScatter)
                     {
-                        CorrectedProbScatter = ProbScatter/(1.0-ProbAbsorb);
-                    } */                   
-
-                    ProbAbsorb = ProbAbsorb/(1.0-ProbScatter); //Is this negligble? Is this even correct??
- 
-                    
-                    for(int repeat = 0; repeat < CorrectedRepeats; repeat++) //use 2k here for NIF poster
-                    {
-                        nPhotons++;
-                        if(uni() < ProbScatter)
+                        float RockingCurve;
+                        float BraggAngle = PD.PickBraggScatteringAngle( Energy, RockingCurve);
+                        
+                        if(BraggAngle < 0.0f)
                         {
-                            float RockingCurve;
-                            float BraggAngle = PD.PickBraggScatteringAngle( Energy, RockingCurve);
-                            
-                            if(BraggAngle < 0.0f)
-                            {
-                                continue;
-                            }
-                            
-                            float PhiAngle = (uni() * 2.0*PI);//(UniformRand() * 1.0f) + PI-0.5f;
-                            
-                            float ScatterAngle;
-                            
-                            
-                            if(bRockingCurve)
-                            {
-                                //width is for peak at 2theta (not at bragg angle) so no need to multiply by 2.
-                                ScatterAngle = normal()*RockingCurve + BraggAngle*2.0; //shift from standard normal to bragg peak parameters.
-                            }
-                            else
-                            {
-                                ScatterAngle = BraggAngle*2.0;
-                            }
-                            
-                            Vector ScatterDirection = ScatterUnitVector( Direction, ScatterAngle, PhiAngle);
-                            
-                            if(ScatterDirection.z <= 0.0f)
-                            {
-                                continue;
-                            }
-                            
-                            float CosTheta = cos(ScatterDirection.GetTheta());
-                            float Phi = ScatterDirection.GetPhi();
-                            
-                            /*if( ScatterDirection.y > DirectionMaxY || ScatterDirection.y < DirectionMinY ||
-                               ScatterDirection.x > DirectionMaxX || ScatterDirection.x < DirectionMinX)
-                            {
-                                continue;
-                            }*/
-                            
-                            if(CosTheta < DirectionMinCosTheta || CosTheta > DirectionMaxCosTheta)
-                            {
-                                continue;
-                            }
-                            
-                            if(Phi < DirectionMinPhi || Phi > DirectionMaxPhi)
-                            {
-                                continue;
-                            }
-                            
-                            Vector NewSource(Source.x - (Source.z/Direction.z)*Direction.x,
-                                             Source.y - (Source.z/Direction.z)*Direction.y,
-                                             0.0f);
-                            
-                            double CCDIntersectX = NewSource.x + ((CCDZ-NewSource.z)/(ScatterDirection.z))*ScatterDirection.x; //60
-                            double CCDIntersectY = NewSource.y + ((CCDZ-NewSource.z)/(ScatterDirection.z))*ScatterDirection.y; //60
-                            
-                            /*if( CCDIntersectX > CCDXMin && CCDIntersectX < CCDXMax)
-                            {
-                                if( CCDIntersectY < CCDYMax && CCDIntersectY > CCDYMin)
-                                {
-                                    DiffractResults << CCDIntersectX << "\t" << CCDIntersectY << "\t" << Energy << "\t" << BraggAngle << endl;
-                                    AdvDiffractResults << NewSource.x << "\t" << NewSource.y << "\t" <<
-                                    ScatterDirection.x << "\t" << ScatterDirection.y << "\t" << ScatterDirection.z << "\t" <<
-                                    Energy << endl;
-                                    nDiffracted++;
-                                }
-                            }*/
-                            DiffractResults << CCDIntersectX << "\t" << CCDIntersectY << "\t" << Energy << "\t" << BraggAngle << endl;
-                            AdvDiffractResults << NewSource.x << "\t" << NewSource.y << "\t" <<
-                            ScatterDirection.x << "\t" << ScatterDirection.y << "\t" << ScatterDirection.z << "\t" <<
-                            Energy << endl;
-                            nDiffracted++;
+                            continue;
                         }
-                        //Tantalum Fluo: http://www.nist.gov/data/PDFfiles/jpcrd473.pdf
-                        //0.5 is from only creating x-rays that point upwards.                        
-                        else if(uni() < (ProbAbsorb)*0.019*0.5) //if(uni() < (ProbAbsorb)*0.019*0.5)
+                        
+                        float PhiAngle = (uni() * 2.0*PI);//(UniformRand() * 1.0f) + PI-0.5f;
+                        
+                        float ScatterAngle;
+                        
+                        
+                        if(bRockingCurve)
                         {
-                            /*if(uni() > 0.019*0.5)
-                            {
-                                continue;
-                            }*/
-                            float AbsorptionLength = (-1.0f / AbsorbCoeff) * log(uni()); //how far xray travelled into material
-                            while(AbsorptionLength > PathLength)
-                            {
-                                //need to guarantee that the photon is absorbed within the crystal.
-                                //This is a stupid way to do this... If the absorption probablility is very low there's a very real chance of hanging here for a very long time.
-                                AbsorptionLength = (-1.0f / AbsorbCoeff) * log(uni());
-                            }
-                            //isn't this caculation equivalent to checking if the photon is absorbed in the first place?
-                            //should check if it is quicker just to do this test.
-
-                            float ProbTransmit = exp( -1.0f * AbsorbCoeff * AbsorptionLength);
-                            if(uni() < ProbTransmit)
-                            {
-                                //this checks if the photon would actually be transmitted (pass back out through the material)
-                                continue;
-                            }
-
-                            double CosTheta = uni();//uni()*2.0 - 1.0;
-                            if(CosTheta < DirectionMinCosTheta || CosTheta > DirectionMaxCosTheta)
-                            {
-                                continue;
-                            }
-
-                            double Phi = uni()*2.0*PI - PI; // uni()*2.0*PI;
-
-                            if(Phi < DirectionMinPhi || Phi > DirectionMaxPhi)
-                            {
-                                continue;
-                            }
-
-                            Vector EmitDirection( acos(CosTheta), Phi, true, true);
-
-                            /*if(EmitDirection.z <= 0.0)
-                            {
-                                cout << "Skipped" << endl;
-                                continue;
-                            }*/
-
-                            /*if( EmitDirection.y > DirectionMaxY || EmitDirection.y < DirectionMinY ||
-                                    EmitDirection.x > DirectionMaxX || EmitDirection.x < DirectionMinX)
-                            {
-                                continue;
-                            }*/
-
-                            Vector NewSource(Source.x - (Source.z/Direction.z)*Direction.x,
-                                             Source.y - (Source.z/Direction.z)*Direction.y,
-                                             0.0f);
-
-                            //EmitDirection = EmitDirection.Normalized();
-
-                            double CCDIntersectX = NewSource.x + ((CCDZ-NewSource.z)/(EmitDirection.z))*EmitDirection.x;
-                            double CCDIntersectY = NewSource.y + ((CCDZ-NewSource.z)/(EmitDirection.z))*EmitDirection.y;
-
-                            /*if( CCDIntersectX > CCDXMin && CCDIntersectX < CCDXMax)
-                            {
-                                if( CCDIntersectY < CCDYMax && CCDIntersectY > CCDYMin)
-                                {
-                                    FluoResults << CCDIntersectX << "\t" << CCDIntersectY << endl;
-                                    AdvFluoResults << NewSource.x << "\t" << NewSource.y << "\t" <<
-                                    EmitDirection.x << "\t" << EmitDirection.y << "\t" << EmitDirection.z << "\t" << endl;
-                                    nFluoresced++;
-                                }
-                            }*/
-                            FluoResults << CCDIntersectX << "\t" << CCDIntersectY << endl;
-                            AdvFluoResults << NewSource.x << "\t" << NewSource.y << "\t" <<
-                            EmitDirection.x << "\t" << EmitDirection.y << "\t" << EmitDirection.z << "\t" << endl;
-                            nFluoresced++;
-                        }                        
+                            //width is for peak at 2theta (not at bragg angle) so no need to multiply by 2.
+                            ScatterAngle = normal()*RockingCurve + BraggAngle*2.0; //shift from standard normal to bragg peak parameters.
+                        }
+                        else
+                        {
+                            ScatterAngle = BraggAngle*2.0;
+                        }
+                        
+                        Vector ScatterDirection = ScatterUnitVector( Direction, ScatterAngle, PhiAngle);
+                        
+                        if(ScatterDirection.z <= 0.0f)
+                        {
+                            continue;
+                        }
+                        
+                        float CosTheta = cos(ScatterDirection.GetTheta());
+                        float Phi = ScatterDirection.GetPhi();
+                        
+                        /*if( ScatterDirection.y > DirectionMaxY || ScatterDirection.y < DirectionMinY ||
+                         ScatterDirection.x > DirectionMaxX || ScatterDirection.x < DirectionMinX)
+                         {
+                         continue;
+                         }*/
+                        
+                        if(CosTheta < DirectionMinCosTheta || CosTheta > DirectionMaxCosTheta)
+                        {
+                            continue;
+                        }
+                        
+                        if(Phi < DirectionMinPhi || Phi > DirectionMaxPhi)
+                        {
+                            continue;
+                        }
+                        
+                        Vector NewSource(Source.x - (Source.z/Direction.z)*Direction.x,
+                                         Source.y - (Source.z/Direction.z)*Direction.y,
+                                         0.0f);
+                        
+                        double CCDIntersectX = NewSource.x + ((CCDZ-NewSource.z)/(ScatterDirection.z))*ScatterDirection.x; //60
+                        double CCDIntersectY = NewSource.y + ((CCDZ-NewSource.z)/(ScatterDirection.z))*ScatterDirection.y; //60
+                        
+                        /*if( CCDIntersectX > CCDXMin && CCDIntersectX < CCDXMax)
+                         {
+                         if( CCDIntersectY < CCDYMax && CCDIntersectY > CCDYMin)
+                         {
+                         DiffractResults << CCDIntersectX << "\t" << CCDIntersectY << "\t" << Energy << "\t" << BraggAngle << endl;
+                         AdvDiffractResults << NewSource.x << "\t" << NewSource.y << "\t" <<
+                         ScatterDirection.x << "\t" << ScatterDirection.y << "\t" << ScatterDirection.z << "\t" <<
+                         Energy << endl;
+                         nDiffracted++;
+                         }
+                         }*/
+                        DiffractResults << CCDIntersectX << "\t" << CCDIntersectY << "\t" << Energy << "\t" << BraggAngle << endl;
+                        AdvDiffractResults << NewSource.x << "\t" << NewSource.y << "\t" <<
+                        ScatterDirection.x << "\t" << ScatterDirection.y << "\t" << ScatterDirection.z << "\t" <<
+                        Energy << endl;
+                        nDiffracted++;
+                    }
+                    //Tantalum Fluo: http://www.nist.gov/data/PDFfiles/jpcrd473.pdf
+                    //0.5 is from only creating x-rays that point upwards.
+                    else if(uni() < (ProbAbsorb)*0.019*0.5) //if(uni() < (ProbAbsorb)*0.019*0.5)
+                    {
+                        /*if(uni() > 0.019*0.5)
+                         {
+                         continue;
+                         }*/
+                        float AbsorptionLength = (-1.0f / AbsorbCoeff) * log(uni()); //how far xray travelled into material
+                        while(AbsorptionLength > PathLength)
+                        {
+                            //need to guarantee that the photon is absorbed within the crystal.
+                            //This is a stupid way to do this... If the absorption probablility is very low there's a very real chance of hanging here for a very long time.
+                            AbsorptionLength = (-1.0f / AbsorbCoeff) * log(uni());
+                        }
+                        //isn't this caculation equivalent to checking if the photon is absorbed in the first place?
+                        //should check if it is quicker just to do this test.
+                        
+                        float ProbTransmit = exp( -1.0f * AbsorbCoeff * AbsorptionLength);
+                        if(uni() < ProbTransmit)
+                        {
+                            //this checks if the photon would actually be transmitted (pass back out through the material)
+                            continue;
+                        }
+                        
+                        double CosTheta = uni();//uni()*2.0 - 1.0;
+                        if(CosTheta < DirectionMinCosTheta || CosTheta > DirectionMaxCosTheta)
+                        {
+                            continue;
+                        }
+                        
+                        double Phi = uni()*2.0*PI - PI; // uni()*2.0*PI;
+                        
+                        if(Phi < DirectionMinPhi || Phi > DirectionMaxPhi)
+                        {
+                            continue;
+                        }
+                        
+                        Vector EmitDirection( acos(CosTheta), Phi, true, true);
+                        
+                        /*if(EmitDirection.z <= 0.0)
+                         {
+                         cout << "Skipped" << endl;
+                         continue;
+                         }*/
+                        
+                        /*if( EmitDirection.y > DirectionMaxY || EmitDirection.y < DirectionMinY ||
+                         EmitDirection.x > DirectionMaxX || EmitDirection.x < DirectionMinX)
+                         {
+                         continue;
+                         }*/
+                        
+                        Vector NewSource(Source.x - (Source.z/Direction.z)*Direction.x,
+                                         Source.y - (Source.z/Direction.z)*Direction.y,
+                                         0.0f);
+                        
+                        //EmitDirection = EmitDirection.Normalized();
+                        
+                        double CCDIntersectX = NewSource.x + ((CCDZ-NewSource.z)/(EmitDirection.z))*EmitDirection.x;
+                        double CCDIntersectY = NewSource.y + ((CCDZ-NewSource.z)/(EmitDirection.z))*EmitDirection.y;
+                        
+                        /*if( CCDIntersectX > CCDXMin && CCDIntersectX < CCDXMax)
+                         {
+                         if( CCDIntersectY < CCDYMax && CCDIntersectY > CCDYMin)
+                         {
+                         FluoResults << CCDIntersectX << "\t" << CCDIntersectY << endl;
+                         AdvFluoResults << NewSource.x << "\t" << NewSource.y << "\t" <<
+                         EmitDirection.x << "\t" << EmitDirection.y << "\t" << EmitDirection.z << "\t" << endl;
+                         nFluoresced++;
+                         }
+                         }*/
+                        FluoResults << CCDIntersectX << "\t" << CCDIntersectY << endl;
+                        AdvFluoResults << NewSource.x << "\t" << NewSource.y << "\t" <<
+                        EmitDirection.x << "\t" << EmitDirection.y << "\t" << EmitDirection.z << "\t" << endl;
+                        nFluoresced++;
                     }
                 }
             }
-
-            float Progress = float(EnergyTick)/float(nEPoints);
-
-            if(Progress > ProgressCounter)
-            {
-                int ElapsedTime = int(time(NULL) - StartTime);
-                cout << "Progress: " << Progress*100.0f << "%\t E = " << Energy << "\t(" << ElapsedTime << "s)"<< endl;
-                ProgressCounter += 0.01f;
-            }
+        }
+        
+        float Progress = float(EnergyTick)/float(nEPoints);
+        
+        if(Progress > ProgressCounter)
+        {
+            int ElapsedTime = int(time(NULL) - StartTime);
+            cout << "Progress: " << Progress*100.0f << "%\t E = " << Energy << "\t(" << ElapsedTime << "s)"<< endl;
+            ProgressCounter += 0.01f;
         }
     }
+    
 
     DiffractResults.close();
     FluoResults.close();
