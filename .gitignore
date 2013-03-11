@@ -163,10 +163,10 @@ pip-log.txt
 .DS_Store
 
 #random stuff
-AdvDiffractResults.txt
-AdvFluoResults.txt
-DiffractResults.txt
-FluoResults.txt
+AdvDiffractResults*.txt
+AdvFluoResults*.txt
+DiffractResults*.txt
+FluoResults*.txt
 ProcessedScatteringData.txt
 TaAbsorbCoeff.txt
 TaFormFactor.txt
