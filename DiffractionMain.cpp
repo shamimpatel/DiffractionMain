@@ -475,12 +475,12 @@ int main(int argc, char *argv[])
                     }
                     //Tantalum Fluo: http://www.nist.gov/data/PDFfiles/jpcrd473.pdf
                     //0.5 is from only creating x-rays that point upwards.
-                    else if(uni() < (ProbAbsorb)*0.019*0.5) //if(uni() < (ProbAbsorb)*0.019*0.5)
+                    else if(uni() < (ProbAbsorb)*0.019*0.5)//if(uni() < (ProbAbsorb))//
                     {
                         /*if(uni() > 0.019*0.5)
-                         {
-                         continue;
-                         }*/
+                        {
+                            continue;
+                        }*/
                         float AbsorptionLength = (-1.0f / AbsorbCoeff) * log(uni()); //how far xray travelled into material
                         while(AbsorptionLength > PathLength)
                         {
