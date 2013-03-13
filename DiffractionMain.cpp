@@ -361,6 +361,8 @@ int main(int argc, char *argv[])
     
     float ProgressCounter = 0.0f;
     
+    float AbsorbCoeffFluo = TaMuData.GetAbsorbCoeffDataPoint(EnergyToWavelength(1.710));
+    
     for( unsigned long int EnergyTick = WorkToDo.StartEnergyTick; EnergyTick < WorkToDo.EndEnergyTick; EnergyTick++)
     {
         double Energy = MinE + DeltaE*EnergyTick;
@@ -370,6 +372,9 @@ int main(int argc, char *argv[])
         
         float ProbScatter = PD.GetModifiedScatterProb(Energy);
         float AbsorbCoeff = TaMuData.GetAbsorbCoeffDataPoint( EnergyToWavelength(Energy) );
+                
+        
+        
         //for( double x = 3; x <= 3.1; x += 0.01)
         for(int iXDirectionCounter = 0; iXDirectionCounter <= nDirectionXPoints; iXDirectionCounter++)
         {
@@ -383,7 +388,7 @@ int main(int argc, char *argv[])
                 Direction = Direction.Normalized();
                 
                 float PathLength = fabs(Thickness/Direction.z); //length xray takes through crystal
-                float ProbAbsorb = 1.0f - exp( -1.0f * AbsorbCoeff * PathLength);
+                double ProbAbsorb = 1.0 - exp( -1.0 * AbsorbCoeff * PathLength);
                 
                 //float CorrectedProbScatter = ProbScatter;
                 
@@ -482,17 +487,24 @@ int main(int argc, char *argv[])
                             continue;
                         }*/
                         float AbsorptionLength = (-1.0f / AbsorbCoeff) * log(uni()); //how far xray travelled into material
-                        while(AbsorptionLength > PathLength)
+                        /*while(AbsorptionLength > PathLength)
                         {
                             //need to guarantee that the photon is absorbed within the crystal.
                             //This is a stupid way to do this... If the absorption probablility is very low there's a very real chance of hanging here for a very long time.
                             AbsorptionLength = (-1.0f / AbsorbCoeff) * log(uni());
-                        }
+                        }*/
                         //isn't this caculation equivalent to checking if the photon is absorbed in the first place?
                         //should check if it is quicker just to do this test.
+                                                
+                        if(AbsorptionLength > PathLength)
+                        {
+                            //this almost never gets hit for reasonably sized crystals                            
+                            AbsorptionLength = PathLength;
+                        }
                         
-                        float ProbTransmit = exp( -1.0f * AbsorbCoeff * AbsorptionLength);
-                        if(uni() < ProbTransmit)
+                        float ProbTransmit = exp( -1.0f * AbsorbCoeffFluo * AbsorptionLength);
+                        
+                        if(uni() > ProbTransmit) //if absorbed, continue to next photon
                         {
                             //this checks if the photon would actually be transmitted (pass back out through the material)
                             continue;
@@ -504,6 +516,8 @@ int main(int argc, char *argv[])
                             continue;
                         }
                         
+                        //need to change phi interval to [pi,-pi] so that it passes the phi limits below
+                        //which are created in that same interval
                         double Phi = uni()*2.0*PI - PI; // uni()*2.0*PI;
                         
                         if(Phi < DirectionMinPhi || Phi > DirectionMaxPhi)
