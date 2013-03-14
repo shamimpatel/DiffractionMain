@@ -25,7 +25,8 @@
 using namespace std;
 
 #ifndef base_generator_type
-typedef boost::mt11213b base_generator_type;
+//typedef boost::mt11213b base_generator_type;
+typedef boost::mt19937 base_generator_type; //Docs say that this is marginally slower but I'm unable to measure a repeatable difference. Supposedly this also has better random properties?
 #endif
 
 
