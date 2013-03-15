@@ -40,8 +40,13 @@ struct EnergyWorkUnit
 //http://www.boost.org/doc/libs/1_46_1/libs/random/example/random_demo.cpp
 //http://www.boost.org/doc/libs/1_52_0/doc/html/boost_random/reference.html
 
+
+#define FLUO_DISABLE
+//#define FORCE_DIFFRACTION
+
 int main(int argc, char *argv[])
 {
+    
     
     
     MPI_Init(&argc,&argv);
@@ -50,6 +55,11 @@ int main(int argc, char *argv[])
     MPI_Comm_size(MPI_COMM_WORLD,&NumProcessors);
     MPI_Comm_rank(MPI_COMM_WORLD,&ProcessorId);
     
+#ifdef FLUO_DISABLE
+    
+    cout << "Fluorscence disabled! Diffraction forced on" << endl;;
+    
+#endif
     
     ifstream datafile("InputScript.txt");
     if(datafile.is_open() == false)
@@ -109,7 +119,7 @@ int main(int argc, char *argv[])
     Vector CrystalCorners[4];
     
     CrystalCorners[0] = Vector(CrystalOrigin);
-    CrystalCorners[1] = Vector(0,CrystalOrigin.y+CrystalYLength,0);
+    CrystalCorners[1] = Vector(CrystalOrigin.x,CrystalOrigin.y+CrystalYLength,0);
     CrystalCorners[2] = Vector(CrystalOrigin.x+CrystalXLength,CrystalOrigin.y,0);
     CrystalCorners[3] = Vector(CrystalOrigin.x+CrystalXLength,CrystalOrigin.y+CrystalYLength,0);
     
@@ -329,7 +339,7 @@ int main(int argc, char *argv[])
     
     StringFromMap("SpectrumData", InputData, SpectrumDataFilename);
     SpectrumData Spectrum( MinE, MaxE, 5000 );
-    Spectrum.LoadData("SourceSpectrum.txt");
+    Spectrum.LoadData(SpectrumDataFilename.c_str());
     
     
     int nDiffracted = 0, nFluoresced = 0;
@@ -369,7 +379,7 @@ int main(int argc, char *argv[])
         double Energy = MinE + DeltaE*EnergyTick;
         
         double RelativeSourceIntensity = Spectrum.GetSpectrumDataPoint(Energy);
-        int CorrectedRepeats = floor(RelativeSourceIntensity*double(nRepeats) + 0.5);
+        int CorrectedRepeats = floor(RelativeSourceIntensity*double(nRepeats) + 0.5); //round to nearest integer
         
         float ProbScatter = PD.GetModifiedScatterProb(Energy);
         float AbsorbCoeff = TaMuData.GetAbsorbCoeffDataPoint( EnergyToWavelength(Energy) );
@@ -404,7 +414,11 @@ int main(int argc, char *argv[])
                 for(int repeat = 0; repeat < CorrectedRepeats; repeat++) //use 2k here for NIF poster
                 {
                     nPhotons++;
+#ifndef FORCE_DIFFRACTION
                     if(uni() < ProbScatter)
+#else
+                    if(1)
+#endif
                     {
                         float RockingCurve;
                         float BraggAngle = PD.PickBraggScatteringAngle( Energy, RockingCurve);
@@ -479,6 +493,7 @@ int main(int argc, char *argv[])
                         Energy << endl;
                         nDiffracted++;
                     }
+#ifndef FLUO_DISABLE
                     //Tantalum Fluo: http://www.nist.gov/data/PDFfiles/jpcrd473.pdf
                     //0.5 is from only creating x-rays that point upwards.
                     else if(uni() < (ProbAbsorb)*0.019*0.5)//if(uni() < (ProbAbsorb))//
@@ -564,6 +579,7 @@ int main(int argc, char *argv[])
                         EmitDirection.x << "\t" << EmitDirection.y << "\t" << EmitDirection.z << "\t" << endl;
                         nFluoresced++;
                     }
+#endif
                 }
             }
         }
