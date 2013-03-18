@@ -298,7 +298,6 @@ int main(int argc, char *argv[])
     cout << "X Source Ranges:\t" << minSourceDirectionX << "\t" << maxSourceDirectionX << endl;
     
     
-    
     double minSourceDirectionY = (CrystalOrigin - Source).y;
     double maxSourceDirectionY = minSourceDirectionY + CrystalYLength;
     double DeltaSourceDirectionY        = 0.01;
@@ -315,8 +314,7 @@ int main(int argc, char *argv[])
     
     int nDirectionXPoints = (maxSourceDirectionX - minSourceDirectionX)/DeltaSourceDirectionX; 
     int nDirectionYPoints = (maxSourceDirectionY - minSourceDirectionY)/DeltaSourceDirectionY;
-    
-   
+       
     
     int nRepeats = 500;
     IntFromMap("Repeats", InputData, nRepeats);
@@ -341,6 +339,19 @@ int main(int argc, char *argv[])
     SpectrumData Spectrum( MinE, MaxE, 5000 );
     Spectrum.LoadData(SpectrumDataFilename.c_str());
     
+    cout << "Generating Energy Intervals" << endl;
+    std::vector<std::pair< double, double >> Intervals;
+    
+    if(ProcessorId == 0)
+    {    
+        Spectrum.GetEnergyIntervals( NumProcessors, &Intervals);
+        if(Intervals.size() != NumProcessors)
+        {
+            cout << "Spectrum Integration failed! Quitting!" << endl;
+            exit(1);
+        }
+    }
+
     
     int nDiffracted = 0, nFluoresced = 0;
     
@@ -354,8 +365,13 @@ int main(int argc, char *argv[])
         for(unsigned long int i=0;i<NumProcessors;i++)
         {
             EnergyWorkUnit Work;
-            Work.StartEnergyTick = i * WorkSize;
-            Work.EndEnergyTick = (i+1) * WorkSize;
+            //Work.StartEnergyTick = i * WorkSize;
+            //Work.EndEnergyTick = (i+1) * WorkSize;
+            
+            Work.StartEnergyTick = (Intervals[i].first - MinE)/DeltaE;
+            Work.EndEnergyTick = (Intervals[i].second - MinE)/DeltaE;
+            
+            
             if( i == (NumProcessors - 1) ) //do this so we get the final energy loop for the last core
             {
                 Work.EndEnergyTick++;
@@ -374,6 +390,31 @@ int main(int argc, char *argv[])
     
     float AbsorbCoeffFluo = TaMuData.GetAbsorbCoeffDataPoint(EnergyToWavelength(1.710));
     
+    
+    float MinTheta = Deg2Rad( 0 ); //For zero need a special case otherwise all rays hit a single point.
+    float MaxTheta  = Deg2Rad( +2.862 );
+    float MinPhi = Deg2Rad( 0 );
+    float MaxPhi  = Deg2Rad( 360 );
+    
+    float MinCosTheta = cos( MinTheta );
+    float MaxCosTheta = cos( MaxTheta );
+    
+    if (MinCosTheta > MaxCosTheta)
+    {
+        swap( MinCosTheta, MaxCosTheta);
+    }
+    
+    if (MinPhi > MaxPhi)
+    {
+        swap( MinPhi, MaxPhi);
+    }
+    
+    float deltaCosTheta = (MaxCosTheta-MinCosTheta)/200.0;
+    float deltaPhi = (MaxPhi-MinPhi)/100.0;
+    
+    Vector SourceToCrystal( 3.830, 0, -3.214);    
+    //Direction = TransformToNewFrame(Direction, SourceToCrystal.GetTheta(), SourceToCrystal.GetPhi());
+    
     for( unsigned long int EnergyTick = WorkToDo.StartEnergyTick; EnergyTick < WorkToDo.EndEnergyTick; EnergyTick++)
     {
         double Energy = MinE + DeltaE*EnergyTick;
@@ -383,20 +424,25 @@ int main(int argc, char *argv[])
         
         float ProbScatter = PD.GetModifiedScatterProb(Energy);
         float AbsorbCoeff = TaMuData.GetAbsorbCoeffDataPoint( EnergyToWavelength(Energy) );
-                
+                        
         
         
-        //for( double x = 3; x <= 3.1; x += 0.01)
-        for(int iXDirectionCounter = 0; iXDirectionCounter <= nDirectionXPoints; iXDirectionCounter++)
+        //for(int iXDirectionCounter = 0; iXDirectionCounter <= nDirectionXPoints; iXDirectionCounter++)
+        for( float CosTheta = MinCosTheta; CosTheta <= MaxCosTheta; CosTheta += deltaCosTheta)
         {
-            double x = minSourceDirectionX + DeltaSourceDirectionX*iXDirectionCounter;
-            //for( double y = -0.1; y <= 0.1; y += 0.01)
-            for(int iYDirectionCounter = 0; iYDirectionCounter <= nDirectionYPoints; iYDirectionCounter++)
+            //double x = minSourceDirectionX + DeltaSourceDirectionX*iXDirectionCounter;
+            
+            //for(int iYDirectionCounter = 0; iYDirectionCounter <= nDirectionYPoints; iYDirectionCounter++)
+            for( float Phi = MinPhi; Phi <= MaxPhi; Phi += deltaPhi)
             {
-                double y = minSourceDirectionY + DeltaSourceDirectionY*iYDirectionCounter;
+                //double y = minSourceDirectionY + DeltaSourceDirectionY*iYDirectionCounter;
                 //construct a vector that goes down SourceZ units and across a variable amount
-                Vector Direction( x, y, -1.0*SourceZ);
-                Direction = Direction.Normalized();
+                //Vector Direction( x, y, -1.0*SourceZ);
+                //Direction = Direction.Normalized();
+                
+                
+                Vector Direction( acos(CosTheta), Phi, true, true);
+                Direction = TransformToNewFrame(Direction, SourceToCrystal.GetTheta(), SourceToCrystal.GetPhi());
                 
                 float PathLength = fabs(Thickness/Direction.z); //length xray takes through crystal
                 double ProbAbsorb = 1.0 - exp( -1.0 * AbsorbCoeff * PathLength);
