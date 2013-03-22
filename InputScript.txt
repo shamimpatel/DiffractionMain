@@ -11,11 +11,11 @@ Source		-3.830,0,3.214
 MinEnergy	3
 MaxEnergy	9
 DeltaE		0.0005
-Repeats		500
+Repeats		800
 RockingCurve	0
-CrystalOrigin	-0.367,-0.249,0
-CrystalXLength	0.8677
-CrystalYLength	0.5
+CrystalOrigin	-0.5,-0.5,0
+CrystalXLength	1.0
+CrystalYLength	1.0
 BraggAngleTolerance 0.001
 CCDXSize	2.76
 CCDYSize	2.76

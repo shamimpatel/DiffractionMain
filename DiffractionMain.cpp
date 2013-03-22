@@ -386,12 +386,11 @@ int main(int argc, char *argv[])
     cout << ProcessorId << ":\t" << WorkToDo.StartEnergyTick << "  -->  " << WorkToDo.EndEnergyTick << endl;
     
     
-    float ProgressCounter = 0.0f;
-    
+    float ProgressCounter = 0.0f;    
     float AbsorbCoeffFluo = TaMuData.GetAbsorbCoeffDataPoint(EnergyToWavelength(1.710));
     
     
-    float MinTheta = Deg2Rad( 0 ); //For zero need a special case otherwise all rays hit a single point.
+    float MinTheta = Deg2Rad( 0 );
     float MaxTheta  = Deg2Rad( +2.862 );
     float MinPhi = Deg2Rad( 0 );
     float MaxPhi  = Deg2Rad( 360 );
@@ -424,8 +423,7 @@ int main(int argc, char *argv[])
         
         float ProbScatter = PD.GetModifiedScatterProb(Energy);
         float AbsorbCoeff = TaMuData.GetAbsorbCoeffDataPoint( EnergyToWavelength(Energy) );
-                        
-        
+          
         
         //for(int iXDirectionCounter = 0; iXDirectionCounter <= nDirectionXPoints; iXDirectionCounter++)
         for( float CosTheta = MinCosTheta; CosTheta <= MaxCosTheta; CosTheta += deltaCosTheta)
