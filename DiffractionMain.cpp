@@ -1,3 +1,6 @@
+#include "mpi.h"
+#include "MPIUtils.h"
+
 #include <iostream>
 #include "Vector.h"
 #include "math.h"
@@ -15,12 +18,10 @@
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/variate_generator.hpp>
 #include <boost/random/normal_distribution.hpp>
-#include "CCD.h"
 #include "FileReading.h"
 #include "SpectrumData.h"
-#include "MPIUtils.h"
 
-#include "mpi.h"
+#include "CCD.h"
 
 using namespace std;
 
@@ -41,15 +42,17 @@ struct EnergyWorkUnit
 //http://www.boost.org/doc/libs/1_52_0/doc/html/boost_random/reference.html
 
 
-#define FLUO_DISABLE
+//#define FLUO_DISABLE
 //#define FORCE_DIFFRACTION
 
 int main(int argc, char *argv[])
-{
-    
-    
-    
+{   
     MPI_Init(&argc,&argv);
+    MPI_cout << endl;
+    MPI_cout << "////////////////////////////////////////" << endl;
+    MPI_cout << "//Now running Main Diffraction Program//" << endl;
+    MPI_cout << "////////////////////////////////////////" << endl;
+    MPI_cout << endl;
         
     int NumProcessors, ProcessorId;
     MPI_Comm_size(MPI_COMM_WORLD,&NumProcessors);
@@ -57,7 +60,13 @@ int main(int argc, char *argv[])
     
 #ifdef FLUO_DISABLE
     
-    cout << "Fluorscence disabled! Diffraction forced on" << endl;;
+    MPI_cout << "Fluorscence disabled!" << endl;;
+    
+#endif
+    
+#ifdef FORCE_DIFFRACTION
+    
+    MPI_cout << "Diffraction forced on!" << endl;;
     
 #endif
     
@@ -80,12 +89,11 @@ int main(int argc, char *argv[])
 
     double CCDXMin = CCDCorners[0].x, CCDXMax = CCDCorners[0].x, CCDYMin = CCDCorners[0].y, CCDYMax = CCDCorners[0].y;
     
-    cout << "CCDBounds:" << endl;
-    
-    
+    MPI_cout << "CCDBounds:" << endl;
+        
     for(int i = 0; i<4; i++)
     {
-        cout << i << ":\t"; CCDCorners[i].Print();
+        MPI_cout << i << ":\t"; if(ProcessorId == 0){CCDCorners[i].Print();}
         if(CCDCorners[i].x < CCDXMin)
         {
             CCDXMin = CCDCorners[i].x;
@@ -113,88 +121,107 @@ int main(int argc, char *argv[])
     DoubleFromMap("CrystalXLength", InputData, CrystalXLength);
     DoubleFromMap("CrystalYLength", InputData, CrystalYLength);
     
-    cout << "CrystalOrigin:\t"; CrystalOrigin.Print();
-    cout << "CrystalDimensions:\tX:\t" << CrystalXLength << "\tY:\t" << CrystalYLength << endl;
+    MPI_cout << "CrystalOrigin:\t";if(ProcessorId == 0){CrystalOrigin.Print();}
+    MPI_cout << "CrystalDimensions:\tX:\t" << CrystalXLength << "\tY:\t" << CrystalYLength << endl;
     
-    Vector CrystalCorners[4];
-    
-    CrystalCorners[0] = Vector(CrystalOrigin);
-    CrystalCorners[1] = Vector(CrystalOrigin.x,CrystalOrigin.y+CrystalYLength,0);
-    CrystalCorners[2] = Vector(CrystalOrigin.x+CrystalXLength,CrystalOrigin.y,0);
-    CrystalCorners[3] = Vector(CrystalOrigin.x+CrystalXLength,CrystalOrigin.y+CrystalYLength,0);
-    
-    cout << "Crystal Corners:" << endl;
-    for(int i = 0; i<4; i++)
-    {
-        CrystalCorners[i].Print();
-    }
-    
+
+    Vector Source( -3.0f, 0.0f, 5.0);
+    VectorFromMap("Source", InputData, Source);
     
     double DirectionMinCosTheta = 0.0, DirectionMaxCosTheta = 0.0, DirectionMinPhi = 0.0, DirectionMaxPhi = 0.0;
-    double DirectionMinX = 5, DirectionMinY = 5, DirectionMaxX = -5, DirectionMaxY = -5;
-
-
+    //double DirectionMinX = 5, DirectionMinY = 5, DirectionMaxX = -5, DirectionMaxY = -5;
+     
+    Vector SourceToOrigin = -1.0*Source;
+    
+    double SourceDivergence = 0.0;
+    DoubleFromMap("SourceDivergence", InputData, SourceDivergence);
+    
+    
+    float MinTheta = 0.0;
+    float MaxTheta  = Deg2Rad( +SourceDivergence );
+    float MinPhi = 0.0;
+    float MaxPhi  = 2.0*PI;
+    
+    float MinCosTheta = cos( MinTheta );
+    float MaxCosTheta = cos( MaxTheta );
+    
+    if (MinCosTheta > MaxCosTheta)
+    {
+        swap( MinCosTheta, MaxCosTheta);
+    }
+    
+    if (MinPhi > MaxPhi)
+    {
+        swap( MinPhi, MaxPhi);
+    }
+        
+    int NumThetaSteps = 1;
+    int NumPhiSteps = 1;
+    IntFromMap( "NumThetaSteps", InputData, NumThetaSteps);
+    IntFromMap( "NumPhiSteps", InputData, NumPhiSteps);
+    
+    double deltaCosTheta = (MaxCosTheta-MinCosTheta)/double(NumThetaSteps);
+    double deltaPhi = (MaxPhi-MinPhi)/double(NumPhiSteps);
+    
+    Vector SourceToCrystal = -1.0*Source;
+    double SourceToCrystalTheta = SourceToCrystal.GetTheta();
+    double SourceToCrystalPhi = SourceToCrystal.GetPhi();
+    
+    
     bool bFirstIteration = true;
 
-    //loop through each corner of the crystal, then loop through each of the CCD corners to find the min/max for the solid angle rejection parameters.
-    for(int iCrystalCorner = 0; iCrystalCorner<4; iCrystalCorner++)
+    for( int CosThetaStep = 0; CosThetaStep <= NumThetaSteps; CosThetaStep ++)
     {
-        for( int iCCDCorner = 0; iCCDCorner<4; iCCDCorner++)
+        double SourceCosTheta = MinCosTheta + double(CosThetaStep)*deltaCosTheta;
+        
+        for( int PhiStep = 0; PhiStep <= NumPhiSteps; PhiStep ++)
         {
-            Vector Direction = CCDCorners[iCCDCorner] - CrystalCorners[iCrystalCorner];
-            Direction = Direction.Normalized();
-
-            double CosTheta = cos(Direction.GetTheta());
-            double Phi = Direction.GetPhi();
-
-            if(bFirstIteration)
+            double SourcePhi = MinPhi + double(PhiStep)*deltaPhi;
+            
+            Vector SourceToCrystal( acos(SourceCosTheta), SourcePhi, true, true);
+            SourceToCrystal = TransformToNewFrame(SourceToCrystal, SourceToOrigin.GetTheta(), SourceToOrigin.GetPhi());
+            SourceToCrystal = SourceToCrystal.Normalized();
+            
+            Vector CrystalIntersection(Source.x - (Source.z/SourceToCrystal.z)*SourceToCrystal.x,
+                                       Source.y - (Source.z/SourceToCrystal.z)*SourceToCrystal.y,
+                                       0.0f); //intersection of ray with z=0 plane
+                        
+            for( int iCCDCorner = 0; iCCDCorner<4; iCCDCorner++)
             {
-                DirectionMinX = Direction.x;
-                DirectionMaxX = Direction.x;
-                DirectionMinY = Direction.y;
-                DirectionMaxY = Direction.y;
-
-                DirectionMinCosTheta = CosTheta;
-                DirectionMaxCosTheta = CosTheta;
-                DirectionMinPhi = Phi;
-                DirectionMaxPhi = Phi;
-
-                bFirstIteration = false;
-                continue;
-            }
-
-            if(Direction.x < DirectionMinX)
-            {
-                DirectionMinX = Direction.x;
-            }
-            if(Direction.x > DirectionMaxX)
-            {
-                DirectionMaxX = Direction.x;
-            }
-            if(Direction.y < DirectionMinY)
-            {
-                DirectionMinY = Direction.y;
-            }
-            if(Direction.y > DirectionMaxY)
-            {
-                DirectionMaxY = Direction.y;
-            }
-
-            if(Phi < DirectionMinPhi)
-            {
-                DirectionMinPhi = Phi;
-            }
-            if(Phi > DirectionMaxPhi)
-            {
-                DirectionMaxPhi = Phi;
-            }
-            if(CosTheta < DirectionMinCosTheta)
-            {
-                DirectionMinCosTheta = CosTheta;
-            }
-            if(CosTheta > DirectionMaxCosTheta)
-            {
-                DirectionMaxCosTheta = CosTheta;
+                Vector Direction = CCDCorners[iCCDCorner] - CrystalIntersection;
+                Direction = Direction.Normalized();
+                
+                double CosTheta = cos(Direction.GetTheta());
+                double Phi = Direction.GetPhi();
+                
+                if(bFirstIteration)
+                {                    
+                    DirectionMinCosTheta = CosTheta;
+                    DirectionMaxCosTheta = CosTheta;
+                    DirectionMinPhi = Phi;
+                    DirectionMaxPhi = Phi;
+                    
+                    bFirstIteration = false;
+                    continue;
+                }
+               
+                
+                if(Phi < DirectionMinPhi)
+                {
+                    DirectionMinPhi = Phi;
+                }
+                if(Phi > DirectionMaxPhi)
+                {
+                    DirectionMaxPhi = Phi;
+                }
+                if(CosTheta < DirectionMinCosTheta)
+                {
+                    DirectionMinCosTheta = CosTheta;
+                }
+                if(CosTheta > DirectionMaxCosTheta)
+                {
+                    DirectionMaxCosTheta = CosTheta;
+                }
             }
         }
     }
@@ -204,23 +231,16 @@ int main(int argc, char *argv[])
 
     DoubleFromMap("SolidAngleTolerance", InputData, SolidAngleTolerance);
 
-    DirectionMinX -= DirectionMinX*SolidAngleTolerance;
-    DirectionMinY -= DirectionMinY*SolidAngleTolerance;
-    DirectionMaxX += DirectionMaxX*SolidAngleTolerance;
-    DirectionMaxY += DirectionMaxY*SolidAngleTolerance;
-
     DirectionMinCosTheta -= DirectionMinCosTheta*SolidAngleTolerance;
     DirectionMinPhi -= DirectionMinPhi*SolidAngleTolerance;
     DirectionMaxCosTheta += DirectionMaxCosTheta*SolidAngleTolerance;
     DirectionMaxPhi += DirectionMaxPhi*SolidAngleTolerance;
 
-    cout << "Emitted ray bounds:" << endl;
-    cout << "X:\t" << DirectionMinX << "\t" << DirectionMaxX << endl;
-    cout << "Y:\t" << DirectionMinY << "\t" << DirectionMaxY << endl;
+    MPI_cout << "Emitted ray bounds:" << endl;
     
     
-    cout << "CosTheta:\t" << DirectionMinCosTheta << "\t" << DirectionMaxCosTheta << endl;
-    cout << "Phi:\t" << DirectionMinPhi << "\t" << DirectionMaxPhi << endl;
+    MPI_cout << "CosTheta:\t" << DirectionMinCosTheta << "\t" << DirectionMaxCosTheta << endl;
+    MPI_cout << "Phi:\t" << DirectionMinPhi << "\t" << DirectionMaxPhi << endl;
 
 
     base_generator_type generator(42580*(ProcessorId+500));
@@ -242,83 +262,51 @@ int main(int argc, char *argv[])
     StringFromMap("DiffractionData", InputData, DiffractionData);
     PD.LoadData(DiffractionData.c_str());
 
-    AbsorbCoeffData TaMuData( 1.0f, 15.0f, 2000);
+    
+    
+    std::string MuDataFilename;
+    StringFromMap("AbsorptionData", InputData, MuDataFilename);
+        
+    double MinE = 3.0;//4.23;
+    double MaxE = 9.0;//4.28;
+    double DeltaE = 0.0005;//0.0005f;
+    
+    DoubleFromMap("MinEnergy", InputData, MinE);
+    DoubleFromMap("MaxEnergy", InputData, MaxE);
+    DoubleFromMap("DeltaE", InputData, DeltaE);
+        
+    double MinWavelength = EnergyToWavelength(MaxE); MinWavelength -= MinWavelength*0.02;
+    double MaxWavelength = EnergyToWavelength(MinE);
+    
+    if( MaxWavelength < EnergyToWavelength(1.710) )
+    {
+        MaxWavelength = EnergyToWavelength(1.170);
+    }
+    
+    MaxWavelength += MaxWavelength*0.02;
+    
+    AbsorbCoeffData MuData( MinWavelength, MaxWavelength, 1, 5000, MuDataFilename.c_str());
 
-    std::string AbsorptionData;
-    StringFromMap("AbsorptionData", InputData, AbsorptionData);
-    TaMuData.LoadData(AbsorptionData.c_str());
-
+    
     double Thickness = 500000;//try 50 microns //500000.0f; //50 microns in A
-
     DoubleFromMap("CrystalThickness", InputData, Thickness);
 
     //simple detector at X/Y plane
-    //ofstream DiffractResults( "DiffractResults.txt" );
-    //ofstream FluoResults( "FluoResults.txt" );
     ofstream DiffractResults( CreateProcessorUniqueFilename("DiffractResults", ".txt") );
     ofstream FluoResults( CreateProcessorUniqueFilename("FluoResults", ".txt") );
     
 
     //full ray information
-    //ofstream AdvDiffractResults( "AdvDiffractResults.txt");
-    //ofstream AdvFluoResults( "AdvFluoResults.txt" );
     ofstream AdvDiffractResults( CreateProcessorUniqueFilename("AdvDiffractResults", ".txt"));
     ofstream AdvFluoResults( CreateProcessorUniqueFilename("AdvFluoResults", ".txt") );
 
     double CCDZ = CCDCamera.CCDOrigin.z;
 
-    //DoubleFromMap("SourceZ", InputData, SourceZ);
-    //DoubleFromMap("CCDZ", InputData, CCDZ);
 
-    Vector Source( -3.0f, 0.0f, 5.0);    
-    VectorFromMap("Source", InputData, Source);
-    double SourceZ = Source.z;
 
-    double MinE = 3.0;//4.23;
-    double MaxE = 9.0;//4.28;
-    double DeltaE = 0.0005;//0.0005f;
-
-    DoubleFromMap("MinEnergy", InputData, MinE);
-    DoubleFromMap("MaxEnergy", InputData, MaxE);
-    DoubleFromMap("DeltaE", InputData, DeltaE);
-
-    int nEPoints = (MaxE - MinE)/DeltaE;
-           
-    
-    double minSourceDirectionX = (CrystalOrigin - Source).x;
-    double maxSourceDirectionX = minSourceDirectionX + CrystalXLength;
-    double DeltaSourceDirectionX        = 0.01;
-    DoubleFromMap("TempSourceDeltaX", InputData, DeltaSourceDirectionX);
-    
-    if(minSourceDirectionX > maxSourceDirectionX)
-    {
-        swap(minSourceDirectionX,maxSourceDirectionX);
-    }
-    
-    cout << "X Source Ranges:\t" << minSourceDirectionX << "\t" << maxSourceDirectionX << endl;
-    
-    
-    double minSourceDirectionY = (CrystalOrigin - Source).y;
-    double maxSourceDirectionY = minSourceDirectionY + CrystalYLength;
-    double DeltaSourceDirectionY        = 0.01;
-    DoubleFromMap("TempSourceDeltaY", InputData, DeltaSourceDirectionY);
-
-    
-    if(minSourceDirectionY > maxSourceDirectionY)
-    {
-        swap(minSourceDirectionY,maxSourceDirectionY);
-    }
-    
-    cout << "Y Source Ranges:\t" << minSourceDirectionY << "\t" << maxSourceDirectionY << endl;
-    
-    
-    int nDirectionXPoints = (maxSourceDirectionX - minSourceDirectionX)/DeltaSourceDirectionX; 
-    int nDirectionYPoints = (maxSourceDirectionY - minSourceDirectionY)/DeltaSourceDirectionY;
-       
-    
     int nRepeats = 500;
     IntFromMap("Repeats", InputData, nRepeats);
-    cout << nRepeats << " Repeats" << endl;
+    MPI_cout << nRepeats << " Repeats" << endl;
     
     long unsigned int nPhotons = 0;
     
@@ -329,49 +317,34 @@ int main(int argc, char *argv[])
     bRockingCurve = int(iRockingCurve);
     if(!bRockingCurve)
     {
-        cout << "Rocking Curve Disabled" << endl;
+        MPI_cout << "Rocking Curve Disabled" << endl;
     }
-    
-    
-    std::string SpectrumDataFilename;
-    
+        
+    std::string SpectrumDataFilename;    
     StringFromMap("SpectrumData", InputData, SpectrumDataFilename);
-    SpectrumData Spectrum( MinE, MaxE, 5000 );
-    Spectrum.LoadData(SpectrumDataFilename.c_str());
+    SpectrumData Spectrum( MinE, MaxE, 1, 5000, SpectrumDataFilename.c_str() );
+        
+    int nDiffracted = 0, nFluoresced = 0;
     
-    cout << "Generating Energy Intervals" << endl;
-    std::vector<std::pair< double, double >> Intervals;
-    
+    MPI_cout << "Generating Energy Intervals" << endl;    
     if(ProcessorId == 0)
-    {    
+    {
+        
+        std::vector<std::pair< double, double >> Intervals;
         Spectrum.GetEnergyIntervals( NumProcessors, &Intervals);
         if(Intervals.size() != NumProcessors)
         {
             cout << "Spectrum Integration failed! Quitting!" << endl;
             exit(1);
         }
-    }
-
-    
-    int nDiffracted = 0, nFluoresced = 0;
-    
-    long unsigned int StartTime = time(NULL);
-    
-
-    if(ProcessorId == 0)
-    {
-        unsigned long int WorkSize = nEPoints/NumProcessors;
         
         for(unsigned long int i=0;i<NumProcessors;i++)
         {
             EnergyWorkUnit Work;
-            //Work.StartEnergyTick = i * WorkSize;
-            //Work.EndEnergyTick = (i+1) * WorkSize;
             
             Work.StartEnergyTick = (Intervals[i].first - MinE)/DeltaE;
             Work.EndEnergyTick = (Intervals[i].second - MinE)/DeltaE;
-            
-            
+                        
             if( i == (NumProcessors - 1) ) //do this so we get the final energy loop for the last core
             {
                 Work.EndEnergyTick++;
@@ -386,64 +359,50 @@ int main(int argc, char *argv[])
     cout << ProcessorId << ":\t" << WorkToDo.StartEnergyTick << "  -->  " << WorkToDo.EndEnergyTick << endl;
     
     
-    float ProgressCounter = 0.0f;    
-    float AbsorbCoeffFluo = TaMuData.GetAbsorbCoeffDataPoint(EnergyToWavelength(1.710));
+    float ProgressCounter = 0.0f;
     
+#ifndef FLUO_DISABLE
+    float AbsorbCoeffFluo = MuData.GetAbsorbCoeffDataPoint(EnergyToWavelength(1.710));
+#endif
+
     
-    float MinTheta = Deg2Rad( 0 );
-    float MaxTheta  = Deg2Rad( +2.862 );
-    float MinPhi = Deg2Rad( 0 );
-    float MaxPhi  = Deg2Rad( 360 );
+    long unsigned int StartTime = time(NULL);
     
-    float MinCosTheta = cos( MinTheta );
-    float MaxCosTheta = cos( MaxTheta );
-    
-    if (MinCosTheta > MaxCosTheta)
-    {
-        swap( MinCosTheta, MaxCosTheta);
-    }
-    
-    if (MinPhi > MaxPhi)
-    {
-        swap( MinPhi, MaxPhi);
-    }
-    
-    float deltaCosTheta = (MaxCosTheta-MinCosTheta)/200.0;
-    float deltaPhi = (MaxPhi-MinPhi)/100.0;
-    
-    Vector SourceToCrystal( 3.830, 0, -3.214);    
-    //Direction = TransformToNewFrame(Direction, SourceToCrystal.GetTheta(), SourceToCrystal.GetPhi());
+    double FluoYield = 0.019;
     
     for( unsigned long int EnergyTick = WorkToDo.StartEnergyTick; EnergyTick < WorkToDo.EndEnergyTick; EnergyTick++)
     {
         double Energy = MinE + DeltaE*EnergyTick;
         
         double RelativeSourceIntensity = Spectrum.GetSpectrumDataPoint(Energy);
-        int CorrectedRepeats = floor(RelativeSourceIntensity*double(nRepeats) + 0.5); //round to nearest integer
+        double SpectrumCorrectedRepeats = RelativeSourceIntensity*double(nRepeats);//floor(RelativeSourceIntensity*double(nRepeats) + 0.5); //round to nearest integer
         
         float ProbScatter = PD.GetModifiedScatterProb(Energy);
-        float AbsorbCoeff = TaMuData.GetAbsorbCoeffDataPoint( EnergyToWavelength(Energy) );
+        float AbsorbCoeff = MuData.GetAbsorbCoeffDataPoint( EnergyToWavelength(Energy) );
           
-        
-        //for(int iXDirectionCounter = 0; iXDirectionCounter <= nDirectionXPoints; iXDirectionCounter++)
-        for( float CosTheta = MinCosTheta; CosTheta <= MaxCosTheta; CosTheta += deltaCosTheta)
+        for( int CosThetaStep = 0; CosThetaStep <= NumThetaSteps; CosThetaStep ++)
         {
-            //double x = minSourceDirectionX + DeltaSourceDirectionX*iXDirectionCounter;
+            double CosTheta = MinCosTheta + double(CosThetaStep)*deltaCosTheta;
             
-            //for(int iYDirectionCounter = 0; iYDirectionCounter <= nDirectionYPoints; iYDirectionCounter++)
-            for( float Phi = MinPhi; Phi <= MaxPhi; Phi += deltaPhi)
+            double SolidAngleCorrectedRepeats = SpectrumCorrectedRepeats;
+            if(CosThetaStep == 0 || CosThetaStep == NumThetaSteps)
             {
-                //double y = minSourceDirectionY + DeltaSourceDirectionY*iYDirectionCounter;
-                //construct a vector that goes down SourceZ units and across a variable amount
-                //Vector Direction( x, y, -1.0*SourceZ);
-                //Direction = Direction.Normalized();
-                
+                SolidAngleCorrectedRepeats *= 0.5;
+            }
+            
+            int CorrectedRepeats = floor( SolidAngleCorrectedRepeats + 0.5 ); //floor could probably be replaced by an int cast
+            
+            for( int PhiStep = 0; PhiStep < NumPhiSteps; PhiStep ++) //Do I want to go around by 2pi or slightly less than 2pi?
+            {
+                double Phi = MinPhi + double(PhiStep)*deltaPhi;
                 
                 Vector Direction( acos(CosTheta), Phi, true, true);
-                Direction = TransformToNewFrame(Direction, SourceToCrystal.GetTheta(), SourceToCrystal.GetPhi());
-                
+                Direction = TransformToNewFrame(Direction, SourceToCrystalTheta, SourceToCrystalPhi);                
                 float PathLength = fabs(Thickness/Direction.z); //length xray takes through crystal
+                
                 double ProbAbsorb = 1.0 - exp( -1.0 * AbsorbCoeff * PathLength);
+                ProbAbsorb *= FluoYield*0.5;
+                ProbAbsorb += ProbScatter;
                 
                 //float CorrectedProbScatter = ProbScatter;
                 
@@ -452,14 +411,15 @@ int main(int argc, char *argv[])
                  CorrectedProbScatter = ProbScatter/(1.0-ProbAbsorb);
                  } */
                 
-                ProbAbsorb = ProbAbsorb/(1.0-ProbScatter); //Is this negligble? Is this even correct??
+                //ProbAbsorb = ProbAbsorb/(1.0-ProbScatter); //Is this negligble? Is this even correct??
                 
-                
-                for(int repeat = 0; repeat < CorrectedRepeats; repeat++) //use 2k here for NIF poster
+                                
+                for(int repeat = 0; repeat < CorrectedRepeats; repeat++)
                 {
+                    double R = uni();
                     nPhotons++;
 #ifndef FORCE_DIFFRACTION
-                    if(uni() < ProbScatter)
+                    if(R < ProbScatter)
 #else
                     if(1)
 #endif
@@ -496,13 +456,8 @@ int main(int argc, char *argv[])
                         
                         float CosTheta = cos(ScatterDirection.GetTheta());
                         float Phi = ScatterDirection.GetPhi();
-                        
-                        /*if( ScatterDirection.y > DirectionMaxY || ScatterDirection.y < DirectionMinY ||
-                         ScatterDirection.x > DirectionMaxX || ScatterDirection.x < DirectionMinX)
-                         {
-                         continue;
-                         }*/
-                        
+                       
+                       
                         if(CosTheta < DirectionMinCosTheta || CosTheta > DirectionMaxCosTheta)
                         {
                             continue;
@@ -519,18 +474,8 @@ int main(int argc, char *argv[])
                         
                         double CCDIntersectX = NewSource.x + ((CCDZ-NewSource.z)/(ScatterDirection.z))*ScatterDirection.x; //60
                         double CCDIntersectY = NewSource.y + ((CCDZ-NewSource.z)/(ScatterDirection.z))*ScatterDirection.y; //60
-                        
-                        /*if( CCDIntersectX > CCDXMin && CCDIntersectX < CCDXMax)
-                         {
-                         if( CCDIntersectY < CCDYMax && CCDIntersectY > CCDYMin)
-                         {
-                         DiffractResults << CCDIntersectX << "\t" << CCDIntersectY << "\t" << Energy << "\t" << BraggAngle << endl;
-                         AdvDiffractResults << NewSource.x << "\t" << NewSource.y << "\t" <<
-                         ScatterDirection.x << "\t" << ScatterDirection.y << "\t" << ScatterDirection.z << "\t" <<
-                         Energy << endl;
-                         nDiffracted++;
-                         }
-                         }*/
+                       
+
                         DiffractResults << CCDIntersectX << "\t" << CCDIntersectY << "\t" << Energy << "\t" << BraggAngle << endl;
                         AdvDiffractResults << NewSource.x << "\t" << NewSource.y << "\t" <<
                         ScatterDirection.x << "\t" << ScatterDirection.y << "\t" << ScatterDirection.z << "\t" <<
@@ -540,29 +485,29 @@ int main(int argc, char *argv[])
 #ifndef FLUO_DISABLE
                     //Tantalum Fluo: http://www.nist.gov/data/PDFfiles/jpcrd473.pdf
                     //0.5 is from only creating x-rays that point upwards.
-                    else if(uni() < (ProbAbsorb)*0.019*0.5)//if(uni() < (ProbAbsorb))//
+                    else if(R < ProbAbsorb)
                     {
-                        /*if(uni() > 0.019*0.5)
-                        {
-                            continue;
-                        }*/
                         float AbsorptionLength = (-1.0f / AbsorbCoeff) * log(uni()); //how far xray travelled into material
-                        /*while(AbsorptionLength > PathLength)
+                        
+                        while(AbsorptionLength > PathLength)
                         {
                             //need to guarantee that the photon is absorbed within the crystal.
                             //This is a stupid way to do this... If the absorption probablility is very low there's a very real chance of hanging here for a very long time.
                             AbsorptionLength = (-1.0f / AbsorbCoeff) * log(uni());
-                        }*/
+                        }
                         //isn't this caculation equivalent to checking if the photon is absorbed in the first place?
                         //should check if it is quicker just to do this test.
                                                 
-                        if(AbsorptionLength > PathLength)
+                        
+                        double CosTheta = uni();//uni()*2.0 - 1.0;
+                        if(CosTheta < DirectionMinCosTheta || CosTheta > DirectionMaxCosTheta)
                         {
-                            //this almost never gets hit for reasonably sized crystals                            
-                            AbsorptionLength = PathLength;
+                            continue;
                         }
                         
-                        float ProbTransmit = exp( -1.0f * AbsorbCoeffFluo * AbsorptionLength);
+                        float Depth = fabs( AbsorptionLength * Direction.z ); //how deep xray gets into crystal
+                        
+                        float ProbTransmit = exp( -1.0f * AbsorbCoeffFluo * fabs(Depth/CosTheta)  ); //Depth/CosTheta to determine path length back out of crystal (reflection geometry only)
                         
                         if(uni() > ProbTransmit) //if absorbed, continue to next photon
                         {
@@ -570,11 +515,7 @@ int main(int argc, char *argv[])
                             continue;
                         }
                         
-                        double CosTheta = uni();//uni()*2.0 - 1.0;
-                        if(CosTheta < DirectionMinCosTheta || CosTheta > DirectionMaxCosTheta)
-                        {
-                            continue;
-                        }
+
                         
                         //need to change phi interval to [pi,-pi] so that it passes the phi limits below
                         //which are created in that same interval
@@ -587,37 +528,15 @@ int main(int argc, char *argv[])
                         
                         Vector EmitDirection( acos(CosTheta), Phi, true, true);
                         
-                        /*if(EmitDirection.z <= 0.0)
-                         {
-                         cout << "Skipped" << endl;
-                         continue;
-                         }*/
-                        
-                        /*if( EmitDirection.y > DirectionMaxY || EmitDirection.y < DirectionMinY ||
-                         EmitDirection.x > DirectionMaxX || EmitDirection.x < DirectionMinX)
-                         {
-                         continue;
-                         }*/
                         
                         Vector NewSource(Source.x - (Source.z/Direction.z)*Direction.x,
                                          Source.y - (Source.z/Direction.z)*Direction.y,
                                          0.0f);
                         
-                        //EmitDirection = EmitDirection.Normalized();
-                        
                         double CCDIntersectX = NewSource.x + ((CCDZ-NewSource.z)/(EmitDirection.z))*EmitDirection.x;
                         double CCDIntersectY = NewSource.y + ((CCDZ-NewSource.z)/(EmitDirection.z))*EmitDirection.y;
                         
-                        /*if( CCDIntersectX > CCDXMin && CCDIntersectX < CCDXMax)
-                         {
-                         if( CCDIntersectY < CCDYMax && CCDIntersectY > CCDYMin)
-                         {
-                         FluoResults << CCDIntersectX << "\t" << CCDIntersectY << endl;
-                         AdvFluoResults << NewSource.x << "\t" << NewSource.y << "\t" <<
-                         EmitDirection.x << "\t" << EmitDirection.y << "\t" << EmitDirection.z << "\t" << endl;
-                         nFluoresced++;
-                         }
-                         }*/
+
                         FluoResults << CCDIntersectX << "\t" << CCDIntersectY << endl;
                         AdvFluoResults << NewSource.x << "\t" << NewSource.y << "\t" <<
                         EmitDirection.x << "\t" << EmitDirection.y << "\t" << EmitDirection.z << "\t" << endl;
@@ -634,7 +553,6 @@ int main(int argc, char *argv[])
         {
             int ElapsedTime = int(time(NULL) - StartTime);
             printf( "Proc %d: Progress: %.0f%%\tE = %.3f\t(%is)\n", ProcessorId, Progress*100.0, Energy, ElapsedTime); //output looks nicer this way
-            //cout << "Proc " << ProcessorId << ": Progress: " << Progress*100.0f << "%\t E = " << Energy << "\t(" << ElapsedTime << "s)"<< endl;
             ProgressCounter += 0.01f;
         }
     }
@@ -649,9 +567,8 @@ int main(int argc, char *argv[])
     
     cout << "Proc " << ProcessorId << ": " <<  nPhotons    << " Photons"   << endl;
     cout << "Proc " << ProcessorId << ": " <<  nDiffracted << " Diffracted photons" << endl;
-    cout << "Proc " << ProcessorId << ": " <<  nFluoresced << " Fluoresced photons" << endl;
-    
-    cout << "Done!" << endl;
+    cout << "Proc " << ProcessorId << ": " <<  nFluoresced << " Fluoresced photons" << endl;    
+    cout << "Proc " << ProcessorId << ": " <<  "Done! (" << int(time(NULL) - StartTime) << "s)" << endl;
 
     MPI_Barrier(MPI_COMM_WORLD);
     
@@ -666,7 +583,14 @@ int main(int argc, char *argv[])
 
     MPI_Finalize();
     
-    
+    if(ProcessorId == 0)
+    {
+        cout << endl;
+        cout << "/////////////////////////////////////////////" << endl;
+        cout << "//Finished running Main Diffraction Program//" << endl;
+        cout << "/////////////////////////////////////////////" << endl;
+        cout << endl;        
+    }
     
     return 0;
 }

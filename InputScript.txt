@@ -11,7 +11,7 @@ Source		-3.830,0,3.214
 MinEnergy	3
 MaxEnergy	9
 DeltaE		0.0005
-Repeats		800
+Repeats		500
 RockingCurve	0
 CrystalOrigin	-0.5,-0.5,0
 CrystalXLength	1.0
@@ -29,3 +29,6 @@ FlipXAxis	0
 FlipYAxis	0
 SpectrumData	SourceSpectrum.txt
 FilterThickness		0.0
+SourceDivergence	2.862
+NumThetaSteps	200
+NumPhiSteps	100

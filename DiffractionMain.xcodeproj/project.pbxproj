@@ -45,6 +45,8 @@
 		6CC6480016EE227A00759563 /* libmpi_cxx.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmpi_cxx.1.dylib; path = /Users/shamim/Documents/Code/SPEDXSim/TestCode/TestCode/../../../../../../../sw/lib/openmpi/libmpi_cxx.1.dylib; sourceTree = "<absolute>"; };
 		6CC6480116EE227A00759563 /* libmpi.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmpi.1.dylib; path = /Users/shamim/Documents/Code/SPEDXSim/TestCode/TestCode/../../../../../../../sw/lib/openmpi/libmpi.1.dylib; sourceTree = "<absolute>"; };
 		6CC6480416EE246200759563 /* MPIUtils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = MPIUtils.h; path = ../../../Include/MPIUtils.h; sourceTree = "<group>"; };
+		6CC6A2A316FCA98400F9D7D8 /* MPICout.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = MPICout.h; path = /Users/shamim/Documents/Code/SPEDXSim/TestCode/TestCode/../../../Include/MPICout.h; sourceTree = "<absolute>"; };
+		6CC6A2A51700BBBC00F9D7D8 /* DataLoader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = DataLoader.h; path = /Users/shamim/Documents/Code/SPEDXSim/TestCode/TestCode/../../../Include/DataLoader.h; sourceTree = "<absolute>"; };
 		6CD2EF2C16DE19CA00B6283B /* DiffractionMain.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = DiffractionMain.1; sourceTree = "<group>"; };
 		6CD2EF3516DE1C2C00B6283B /* DiffractionMain.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DiffractionMain.cpp; sourceTree = SOURCE_ROOT; };
 		6CD2EF3816DE221800B6283B /* AbsorbCoeffData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AbsorbCoeffData.h; path = ../../../Include/AbsorbCoeffData.h; sourceTree = "<group>"; };
@@ -94,6 +96,8 @@
 		6CD2EF3716DE220900B6283B /* Headers */ = {
 			isa = PBXGroup;
 			children = (
+				6CC6A2A51700BBBC00F9D7D8 /* DataLoader.h */,
+				6CC6A2A316FCA98400F9D7D8 /* MPICout.h */,
 				6CAA26DD16E89E36004D257C /* SpectrumData.h */,
 				6CD2EF3816DE221800B6283B /* AbsorbCoeffData.h */,
 				6CD2EF3916DE221800B6283B /* CCD.h */,
