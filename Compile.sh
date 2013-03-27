@@ -1,0 +1,1 @@
+mpic++ DiffractionMain.cpp -o DiffractionMainRun -I../../Include -Wall -O3

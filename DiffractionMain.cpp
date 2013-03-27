@@ -42,7 +42,7 @@ struct EnergyWorkUnit
 //http://www.boost.org/doc/libs/1_52_0/doc/html/boost_random/reference.html
 
 
-//#define FLUO_DISABLE
+#define FLUO_DISABLE
 //#define FORCE_DIFFRACTION
 
 int main(int argc, char *argv[])
@@ -58,6 +58,10 @@ int main(int argc, char *argv[])
     MPI_Comm_size(MPI_COMM_WORLD,&NumProcessors);
     MPI_Comm_rank(MPI_COMM_WORLD,&ProcessorId);
     
+	
+	MPI_cout << "Num Processors: " << NumProcessors << endl;
+	cout << "Processor " <<	ProcessorId << " online" << endl;
+	
 #ifdef FLUO_DISABLE
     
     MPI_cout << "Fluorscence disabled!" << endl;;
@@ -255,7 +259,6 @@ int main(int argc, char *argv[])
     double LatticeConst;
 
     DoubleFromMap("LatticeConstant", InputData, LatticeConst);
-
     PowderDiffraction PD( LatticeConst, &uni ); //Tantalum a0 = 3.31A
 
     std::string DiffractionData;
@@ -292,13 +295,13 @@ int main(int argc, char *argv[])
     DoubleFromMap("CrystalThickness", InputData, Thickness);
 
     //simple detector at X/Y plane
-    ofstream DiffractResults( CreateProcessorUniqueFilename("DiffractResults", ".txt") );
-    ofstream FluoResults( CreateProcessorUniqueFilename("FluoResults", ".txt") );
+    ofstream DiffractResults( CreateProcessorUniqueFilename("DiffractResults", ".txt").c_str() );
+    ofstream FluoResults( CreateProcessorUniqueFilename("FluoResults", ".txt").c_str() );
     
 
     //full ray information
-    ofstream AdvDiffractResults( CreateProcessorUniqueFilename("AdvDiffractResults", ".txt"));
-    ofstream AdvFluoResults( CreateProcessorUniqueFilename("AdvFluoResults", ".txt") );
+    ofstream AdvDiffractResults( CreateProcessorUniqueFilename("AdvDiffractResults", ".txt").c_str() );
+    ofstream AdvFluoResults( CreateProcessorUniqueFilename("AdvFluoResults", ".txt").c_str() );
 
     double CCDZ = CCDCamera.CCDOrigin.z;
 
@@ -330,14 +333,15 @@ int main(int argc, char *argv[])
     if(ProcessorId == 0)
     {
         
-        std::vector<std::pair< double, double >> Intervals;
+        std::vector<std::pair< double, double > > Intervals;
         Spectrum.GetEnergyIntervals( NumProcessors, &Intervals);
+		cout << "Finished generating intervals!" << endl;
         if(Intervals.size() != NumProcessors)
         {
             cout << "Spectrum Integration failed! Quitting!" << endl;
             exit(1);
         }
-        
+        cout << "Sending intervals...";
         for(unsigned long int i=0;i<NumProcessors;i++)
         {
             EnergyWorkUnit Work;
@@ -349,12 +353,15 @@ int main(int argc, char *argv[])
             {
                 Work.EndEnergyTick++;
             }
-            MPI_Send(&Work, sizeof(EnergyWorkUnit), MPI_BYTE, int(i), 0, MPI_COMM_WORLD);
+			MPI_Request R;
+            MPI_Isend(&Work, sizeof(EnergyWorkUnit), MPI_BYTE, int(i), 0, MPI_COMM_WORLD, &R);
         }
+		cout << "Intervals sent" << endl;
     }
     
     MPI_Status Stat;
-    EnergyWorkUnit WorkToDo;    
+    EnergyWorkUnit WorkToDo;
+	MPI_cout << "Receiving intervals" << endl;
     MPI_Recv(&WorkToDo, sizeof(EnergyWorkUnit), MPI_BYTE, 0, 0, MPI_COMM_WORLD, &Stat);
     cout << ProcessorId << ":\t" << WorkToDo.StartEnergyTick << "  -->  " << WorkToDo.EndEnergyTick << endl;
     
@@ -370,6 +377,8 @@ int main(int argc, char *argv[])
     
     double FluoYield = 0.019;
     
+	cout << "Processor " << ProcessorId << " starting" << endl;
+	
     for( unsigned long int EnergyTick = WorkToDo.StartEnergyTick; EnergyTick < WorkToDo.EndEnergyTick; EnergyTick++)
     {
         double Energy = MinE + DeltaE*EnergyTick;
@@ -579,6 +588,12 @@ int main(int argc, char *argv[])
         system(CreateConcatCommand("AdvDiffractResults", ".txt").c_str());
         system(CreateConcatCommand("FluoResults", ".txt").c_str());
         system(CreateConcatCommand("AdvFluoResults", ".txt").c_str());
+		
+		system("rm AdvDiffractResults_P*");
+		system("rm DiffractResults_P*");
+		system("rm AdvFluoResults_P*");
+		system("rm FluoResults_P*");
+		
     }
 
     MPI_Finalize();
