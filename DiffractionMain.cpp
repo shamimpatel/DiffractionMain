@@ -34,7 +34,7 @@ typedef boost::mt19937 base_generator_type; //Docs say that this is marginally s
 
 struct EnergyWorkUnit
 {
-    unsigned long int StartEnergyTick, EndEnergyTick;
+    unsigned int StartEnergyTick, EndEnergyTick;
 };
 
 
@@ -329,7 +329,10 @@ int main(int argc, char *argv[])
         
     int nDiffracted = 0, nFluoresced = 0;
     
-    MPI_cout << "Generating Energy Intervals" << endl;    
+    MPI_cout << "Generating Energy Intervals" << endl;
+	
+	EnergyWorkUnit WorkToDo;
+	
     if(ProcessorId == 0)
     {
         
@@ -342,30 +345,57 @@ int main(int argc, char *argv[])
             exit(1);
         }
         cout << "Sending intervals...";
-        for(unsigned long int i=0;i<NumProcessors;i++)
+		
+		EnergyWorkUnit WorkUnits[NumProcessors];
+		
+        for(int i = 0;i<NumProcessors;i++)
         {
-            EnergyWorkUnit Work;
+            //EnergyWorkUnit Work;
             
-            Work.StartEnergyTick = (Intervals[i].first - MinE)/DeltaE;
-            Work.EndEnergyTick = (Intervals[i].second - MinE)/DeltaE;
+            WorkUnits[i].StartEnergyTick = (Intervals[i].first - MinE)/DeltaE;
+            WorkUnits[i].EndEnergyTick = (Intervals[i].second - MinE)/DeltaE;
                         
             if( i == (NumProcessors - 1) ) //do this so we get the final energy loop for the last core
             {
-                Work.EndEnergyTick++;
+                WorkUnits[i].EndEnergyTick++;
             }
 			MPI_Request R;
-            MPI_Isend(&Work, sizeof(EnergyWorkUnit), MPI_BYTE, int(i), 0, MPI_COMM_WORLD, &R);
+			if( i != 0 )
+			{
+				MPI_Isend(&(WorkUnits[i]), sizeof(EnergyWorkUnit), MPI_BYTE, int(i), 0, MPI_COMM_WORLD, &R);
+			}
+			else
+			{
+				WorkToDo.StartEnergyTick = WorkUnits[0].StartEnergyTick;
+				WorkToDo.EndEnergyTick = WorkUnits[0].EndEnergyTick;
+			}
+			cout << "Sent Processor " << i << ": " << WorkUnits[i].StartEnergyTick << "-->" << WorkUnits[i].EndEnergyTick << endl;
         }
 		cout << "Intervals sent" << endl;
     }
     
     MPI_Status Stat;
-    EnergyWorkUnit WorkToDo;
+    
 	MPI_cout << "Receiving intervals" << endl;
-    MPI_Recv(&WorkToDo, sizeof(EnergyWorkUnit), MPI_BYTE, 0, 0, MPI_COMM_WORLD, &Stat);
-    cout << ProcessorId << ":\t" << WorkToDo.StartEnergyTick << "  -->  " << WorkToDo.EndEnergyTick << endl;
+	
+	
+	for( int i = 0 ; i < NumProcessors; i++)
+	{
+		MPI_Barrier(MPI_COMM_WORLD);
+		if( ProcessorId == i)
+		{
+			if( i != 0)
+			{
+				MPI_Recv(&WorkToDo, sizeof(EnergyWorkUnit), MPI_BYTE, 0, 0, MPI_COMM_WORLD, &Stat);
+			}
+			cout << ProcessorId << ":\t" << WorkToDo.StartEnergyTick << "  -->  " << WorkToDo.EndEnergyTick << endl;
+		}
+    }
     
-    
+	
+	MPI_Barrier(MPI_COMM_WORLD);
+	
+	
     float ProgressCounter = 0.0f;
     
 #ifndef FLUO_DISABLE
@@ -377,7 +407,7 @@ int main(int argc, char *argv[])
     
     double FluoYield = 0.019;
     
-	cout << "Processor " << ProcessorId << " starting" << endl;
+	//cout << "Processor " << ProcessorId << " starting" << endl;
 	
     for( unsigned long int EnergyTick = WorkToDo.StartEnergyTick; EnergyTick < WorkToDo.EndEnergyTick; EnergyTick++)
     {
