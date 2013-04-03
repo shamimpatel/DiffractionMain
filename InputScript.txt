@@ -3,7 +3,7 @@ CCDNormal	91.925,0,77.135
 CCDAngle	0
 SolidAngleTolerance		0.005
 DiffractionData		ProcessedScatteringData.txt
-LatticeConstant		3.2
+LatticeConstant		3.25
 AbsorptionData	TaAbsorbCoeff.txt
 FormFactorData	TaFormFactor.txt
 CrystalThickness	500000
@@ -11,7 +11,7 @@ Source		-3.830,0,3.214
 MinEnergy	3
 MaxEnergy	9
 DeltaE		0.0005
-Repeats		5
+Repeats		2500
 RockingCurve	0
 CrystalOrigin	-0.5,-0.5,0
 CrystalXLength	1.0
@@ -29,6 +29,6 @@ FlipXAxis	0
 FlipYAxis	0
 SpectrumData	SourceSpectrum.txt
 FilterThickness		0.0
-SourceDivergence	2.862
-NumThetaSteps	100
-NumPhiSteps	50
+SourceDivergence	0.1
+NumThetaSteps	200
+NumPhiSteps	200

@@ -38,8 +38,7 @@ struct EnergyWorkUnit
 };
 
 
-//http://www.boost.org/doc/libs/1_46_1/libs/random/example/random_demo.cpp
-//http://www.boost.org/doc/libs/1_52_0/doc/html/boost_random/reference.html
+
 
 
 #define FLUO_DISABLE
@@ -246,7 +245,11 @@ int main(int argc, char *argv[])
     MPI_cout << "CosTheta:\t" << DirectionMinCosTheta << "\t" << DirectionMaxCosTheta << endl;
     MPI_cout << "Phi:\t" << DirectionMinPhi << "\t" << DirectionMaxPhi << endl;
 
-
+	
+	
+	//http://www.boost.org/doc/libs/1_46_1/libs/random/example/random_demo.cpp
+	//http://www.boost.org/doc/libs/1_52_0/doc/html/boost_random/reference.html
+	
     base_generator_type generator(42580*(ProcessorId+500));
     
     
@@ -369,7 +372,7 @@ int main(int argc, char *argv[])
 				WorkToDo.StartEnergyTick = WorkUnits[0].StartEnergyTick;
 				WorkToDo.EndEnergyTick = WorkUnits[0].EndEnergyTick;
 			}
-			cout << "Sent Processor " << i << ": " << WorkUnits[i].StartEnergyTick << "-->" << WorkUnits[i].EndEnergyTick << endl;
+			//cout << "Sent Processor " << i << ": " << WorkUnits[i].StartEnergyTick << "-->" << WorkUnits[i].EndEnergyTick << endl;
         }
 		cout << "Intervals sent" << endl;
     }
@@ -429,7 +432,7 @@ int main(int argc, char *argv[])
                 SolidAngleCorrectedRepeats *= 0.5;
             }
             
-            int CorrectedRepeats = floor( SolidAngleCorrectedRepeats + 0.5 ); //floor could probably be replaced by an int cast
+            int CorrectedRepeats = floor( SolidAngleCorrectedRepeats + 0.5 ); //floor could probably be replaced by an int cast since we're only dealing +ve numbers here.
             
             for( int PhiStep = 0; PhiStep < NumPhiSteps; PhiStep ++) //Do I want to go around by 2pi or slightly less than 2pi?
             {
