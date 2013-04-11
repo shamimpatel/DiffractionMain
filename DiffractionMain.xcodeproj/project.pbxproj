@@ -40,6 +40,7 @@
 
 /* Begin PBXFileReference section */
 		6C12027B16DF732A00690295 /* DiffractionMainRun */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; name = DiffractionMainRun; path = "../../../../../Library/Developer/Xcode/DerivedData/SPEDXSim-ftdmncttqlednuahdomyuuuyfebv/Build/Products/Release/DiffractionMainRun"; sourceTree = "<group>"; };
+		6C460E1A170F15920038883F /* FluorescenceData.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = FluorescenceData.h; path = /Users/shamim/Documents/Code/SPEDXSim/TestCode/TestCode/../../../Include/FluorescenceData.h; sourceTree = "<absolute>"; };
 		6CAA26C416E7426B004D257C /* DiffractionMainRun */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = DiffractionMainRun; sourceTree = BUILT_PRODUCTS_DIR; };
 		6CAA26DD16E89E36004D257C /* SpectrumData.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SpectrumData.h; path = /Users/shamim/Documents/Code/SPEDXSim/DiffractionProbabilities/../../Include/SpectrumData.h; sourceTree = "<absolute>"; };
 		6CC6480016EE227A00759563 /* libmpi_cxx.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmpi_cxx.1.dylib; path = /Users/shamim/Documents/Code/SPEDXSim/TestCode/TestCode/../../../../../../../sw/lib/openmpi/libmpi_cxx.1.dylib; sourceTree = "<absolute>"; };
@@ -96,6 +97,7 @@
 		6CD2EF3716DE220900B6283B /* Headers */ = {
 			isa = PBXGroup;
 			children = (
+				6C460E1A170F15920038883F /* FluorescenceData.h */,
 				6CC6A2A51700BBBC00F9D7D8 /* DataLoader.h */,
 				6CC6A2A316FCA98400F9D7D8 /* MPICout.h */,
 				6CAA26DD16E89E36004D257C /* SpectrumData.h */,

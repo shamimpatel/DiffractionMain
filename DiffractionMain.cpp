@@ -20,6 +20,7 @@
 #include <boost/random/normal_distribution.hpp>
 #include "FileReading.h"
 #include "SpectrumData.h"
+#include "FluorescenceData.h"
 
 #include "CCD.h"
 
@@ -41,11 +42,11 @@ struct EnergyWorkUnit
 
 
 
-#define FLUO_DISABLE
+//#define FLUO_DISABLE
 //#define FORCE_DIFFRACTION
 
 int main(int argc, char *argv[])
-{   
+{
     MPI_Init(&argc,&argv);
     MPI_cout << endl;
     MPI_cout << "////////////////////////////////////////" << endl;
@@ -59,20 +60,17 @@ int main(int argc, char *argv[])
     
 	
 	MPI_cout << "Num Processors: " << NumProcessors << endl;
-	cout << "Processor " <<	ProcessorId << " online" << endl;
+	//cout << "Processor " <<	ProcessorId << " online" << endl;
 	
-#ifdef FLUO_DISABLE
-    
-    MPI_cout << "Fluorscence disabled!" << endl;;
-    
+#ifdef FLUO_DISABLE    
+    MPI_cout << "Fluorscence disabled!" << endl;    
 #endif
     
-#ifdef FORCE_DIFFRACTION
-    
-    MPI_cout << "Diffraction forced on!" << endl;;
-    
+#ifdef FORCE_DIFFRACTION    
+    MPI_cout << "Diffraction forced on!" << endl;    
 #endif
     
+	
     ifstream datafile("InputScript.txt");
     if(datafile.is_open() == false)
     {
@@ -132,7 +130,6 @@ int main(int argc, char *argv[])
     VectorFromMap("Source", InputData, Source);
     
     double DirectionMinCosTheta = 0.0, DirectionMaxCosTheta = 0.0, DirectionMinPhi = 0.0, DirectionMaxPhi = 0.0;
-    //double DirectionMinX = 5, DirectionMinY = 5, DirectionMaxX = -5, DirectionMaxY = -5;
      
     Vector SourceToOrigin = -1.0*Source;
     
@@ -169,7 +166,6 @@ int main(int argc, char *argv[])
     Vector SourceToCrystal = -1.0*Source;
     double SourceToCrystalTheta = SourceToCrystal.GetTheta();
     double SourceToCrystalPhi = SourceToCrystal.GetPhi();
-    
     
     bool bFirstIteration = true;
 
@@ -258,7 +254,7 @@ int main(int argc, char *argv[])
     boost::variate_generator<base_generator_type&, boost::uniform_real<> > uni(generator, uni_dist);
     boost::variate_generator<base_generator_type&, boost::normal_distribution<> > normal(generator, normal_dist);
     
-
+	
     double LatticeConst;
 
     DoubleFromMap("LatticeConstant", InputData, LatticeConst);
@@ -280,34 +276,47 @@ int main(int argc, char *argv[])
     DoubleFromMap("MinEnergy", InputData, MinE);
     DoubleFromMap("MaxEnergy", InputData, MaxE);
     DoubleFromMap("DeltaE", InputData, DeltaE);
-        
+    	
+	
     double MinWavelength = EnergyToWavelength(MaxE); MinWavelength -= MinWavelength*0.02;
     double MaxWavelength = EnergyToWavelength(MinE);
     
-    if( MaxWavelength < EnergyToWavelength(1.710) )
+    if( MaxWavelength < EnergyToWavelength(0.4) )
     {
-        MaxWavelength = EnergyToWavelength(1.170);
+        MaxWavelength = EnergyToWavelength(0.4);
     }
     
     MaxWavelength += MaxWavelength*0.02;
     
-    AbsorbCoeffData MuData( MinWavelength, MaxWavelength, 1, 5000, MuDataFilename.c_str());
+    AbsorbCoeffData MuData( MinWavelength, MaxWavelength, 1, 10000, MuDataFilename.c_str());
 
-    
-    double Thickness = 500000;//try 50 microns //500000.0f; //50 microns in A
+
+#ifndef FLUO_DISABLE
+	std::string EmissionLineData;
+	std::string ShellProbData;
+	
+	StringFromMap("EmissionLineData", InputData, EmissionLineData);
+	StringFromMap("ShellProbabilityData", InputData, ShellProbData);
+		
+	FluorescenceData FluoData( MinE, MaxE, 2000, EmissionLineData.c_str(), ShellProbData.c_str(), &uni );
+#endif
+	
+
+
+	
+    double Thickness = 500000; //50 microns in A
     DoubleFromMap("CrystalThickness", InputData, Thickness);
 
+	
     //simple detector at X/Y plane
     ofstream DiffractResults( CreateProcessorUniqueFilename("DiffractResults", ".txt").c_str() );
     ofstream FluoResults( CreateProcessorUniqueFilename("FluoResults", ".txt").c_str() );
-    
 
     //full ray information
     ofstream AdvDiffractResults( CreateProcessorUniqueFilename("AdvDiffractResults", ".txt").c_str() );
     ofstream AdvFluoResults( CreateProcessorUniqueFilename("AdvFluoResults", ".txt").c_str() );
 
     double CCDZ = CCDCamera.CCDOrigin.z;
-
 
 
     int nRepeats = 500;
@@ -325,7 +334,9 @@ int main(int argc, char *argv[])
     {
         MPI_cout << "Rocking Curve Disabled" << endl;
     }
-        
+    
+
+	
     std::string SpectrumDataFilename;    
     StringFromMap("SpectrumData", InputData, SpectrumDataFilename);
     SpectrumData Spectrum( MinE, MaxE, 1, 5000, SpectrumDataFilename.c_str() );
@@ -401,14 +412,12 @@ int main(int argc, char *argv[])
 	
     float ProgressCounter = 0.0f;
     
-#ifndef FLUO_DISABLE
-    float AbsorbCoeffFluo = MuData.GetAbsorbCoeffDataPoint(EnergyToWavelength(1.710));
-#endif
+
 
     
     long unsigned int StartTime = time(NULL);
     
-    double FluoYield = 0.019;
+    //double FluoYield = 0.019;
     
 	//cout << "Processor " << ProcessorId << " starting" << endl;
 	
@@ -421,7 +430,9 @@ int main(int argc, char *argv[])
         
         float ProbScatter = PD.GetModifiedScatterProb(Energy);
         float AbsorbCoeff = MuData.GetAbsorbCoeffDataPoint( EnergyToWavelength(Energy) );
-          
+#ifndef FLUO_DISABLE
+		FluoData.PreSelectEnergy(Energy); //pre-gather data as high up the loop as we can.
+#endif
         for( int CosThetaStep = 0; CosThetaStep <= NumThetaSteps; CosThetaStep ++)
         {
             double CosTheta = MinCosTheta + double(CosThetaStep)*deltaCosTheta;
@@ -429,7 +440,7 @@ int main(int argc, char *argv[])
             double SolidAngleCorrectedRepeats = SpectrumCorrectedRepeats;
             if(CosThetaStep == 0 || CosThetaStep == NumThetaSteps)
             {
-                SolidAngleCorrectedRepeats *= 0.5;
+                SolidAngleCorrectedRepeats *= 0.5; //correction to account for first and last costheta steps hitting a smaller solid angle
             }
             
             int CorrectedRepeats = floor( SolidAngleCorrectedRepeats + 0.5 ); //floor could probably be replaced by an int cast since we're only dealing +ve numbers here.
@@ -443,8 +454,8 @@ int main(int argc, char *argv[])
                 float PathLength = fabs(Thickness/Direction.z); //length xray takes through crystal
                 
                 double ProbAbsorb = 1.0 - exp( -1.0 * AbsorbCoeff * PathLength);
-                ProbAbsorb *= FluoYield*0.5;
-                ProbAbsorb += ProbScatter;
+                ProbAbsorb *= 0.5; // accounts for xrays (that we care about) only being emitted in +ve Z
+                ProbAbsorb += ProbScatter; //this correction is likely to be negligible
                 
                 //float CorrectedProbScatter = ProbScatter;
                 
@@ -463,7 +474,7 @@ int main(int argc, char *argv[])
 #ifndef FORCE_DIFFRACTION
                     if(R < ProbScatter)
 #else
-                    if(1)
+                    if(true)
 #endif
                     {
                         float RockingCurve;
@@ -497,14 +508,13 @@ int main(int argc, char *argv[])
                         }
                         
                         float CosTheta = cos(ScatterDirection.GetTheta());
-                        float Phi = ScatterDirection.GetPhi();
-                       
-                       
                         if(CosTheta < DirectionMinCosTheta || CosTheta > DirectionMaxCosTheta)
                         {
                             continue;
                         }
-                        
+						
+						
+						float Phi = ScatterDirection.GetPhi();                        
                         if(Phi < DirectionMinPhi || Phi > DirectionMaxPhi)
                         {
                             continue;
@@ -529,42 +539,52 @@ int main(int argc, char *argv[])
                     //0.5 is from only creating x-rays that point upwards.
                     else if(R < ProbAbsorb)
                     {
-                        float AbsorptionLength = (-1.0f / AbsorbCoeff) * log(uni()); //how far xray travelled into material
-                        
-                        while(AbsorptionLength > PathLength)
-                        {
-                            //need to guarantee that the photon is absorbed within the crystal.
-                            //This is a stupid way to do this... If the absorption probablility is very low there's a very real chance of hanging here for a very long time.
-                            AbsorptionLength = (-1.0f / AbsorbCoeff) * log(uni());
-                        }
-                        //isn't this caculation equivalent to checking if the photon is absorbed in the first place?
-                        //should check if it is quicker just to do this test.
-                                                
-                        
-                        double CosTheta = uni();//uni()*2.0 - 1.0;
-                        if(CosTheta < DirectionMinCosTheta || CosTheta > DirectionMaxCosTheta)
-                        {
-                            continue;
-                        }
-                        
-                        float Depth = fabs( AbsorptionLength * Direction.z ); //how deep xray gets into crystal
-                        
-                        float ProbTransmit = exp( -1.0f * AbsorbCoeffFluo * fabs(Depth/CosTheta)  ); //Depth/CosTheta to determine path length back out of crystal (reflection geometry only)
-                        
-                        if(uni() > ProbTransmit) //if absorbed, continue to next photon
-                        {
-                            //this checks if the photon would actually be transmitted (pass back out through the material)
-                            continue;
-                        }
-                        
-
-                        
-                        //need to change phi interval to [pi,-pi] so that it passes the phi limits below
+						//need to change phi interval to [pi,-pi] so that it passes the phi limits below
                         //which are created in that same interval
                         double Phi = uni()*2.0*PI - PI; // uni()*2.0*PI;
                         
                         if(Phi < DirectionMinPhi || Phi > DirectionMaxPhi)
                         {
+                            continue;
+                        }
+						
+						double CosTheta = uni();//only create x-rays with +ve z    0-->pi: uni()*2.0 - 1.0;
+                        if(CosTheta < DirectionMinCosTheta || CosTheta > DirectionMaxCosTheta)
+                        {
+                            continue;
+                        }
+						
+					
+						double FluoEnergy = FluoData.PickFluorescenceEnergy();
+						if(FluoEnergy < 0.0) //energy will be negative if the xray emission does not pass the fluorescence yield test
+						{
+							continue;
+						}
+						
+						
+						float AbsorptionLength = (-1.0f / AbsorbCoeff) * log(uni()); //how far xray travelled into material
+                        
+                        while(AbsorptionLength > PathLength)
+                        {
+                            //need to guarantee that the photon is absorbed within the crystal.
+                            //This is a stupid way to do this... If the absorption probablility is very low there's a reasonable chance of hanging here for a very long time.
+                            AbsorptionLength = (-1.0f / AbsorbCoeff) * log(uni());
+                        }
+                        //isn't this caculation equivalent to checking if the photon is absorbed in the first place?
+                        //should check if it is quicker just to do this test. (it's not)
+						
+						
+						float Depth = fabs( AbsorptionLength * Direction.z ); //how deep xray gets into crystal
+						
+						
+						float AbsorbCoeffFluo = MuData.GetAbsorbCoeffDataPoint(EnergyToWavelength(FluoEnergy));
+						
+						
+                        float ProbTransmit = exp( -1.0f * AbsorbCoeffFluo * fabs(Depth/CosTheta)  ); //Depth/CosTheta to determine path length back out of crystal (reflection geometry only)
+                        
+                        if(uni() > ProbTransmit) //if absorbed, continue to next photon
+                        {
+                            //this checks if the photon would actually be transmitted (pass back out through the material)
                             continue;
                         }
                         
@@ -581,7 +601,7 @@ int main(int argc, char *argv[])
 
                         FluoResults << CCDIntersectX << "\t" << CCDIntersectY << endl;
                         AdvFluoResults << NewSource.x << "\t" << NewSource.y << "\t" <<
-                        EmitDirection.x << "\t" << EmitDirection.y << "\t" << EmitDirection.z << "\t" << endl;
+                        EmitDirection.x << "\t" << EmitDirection.y << "\t" << EmitDirection.z << "\t" << FluoEnergy << endl;
                         nFluoresced++;
                     }
 #endif
