@@ -412,13 +412,9 @@ int main(int argc, char *argv[])
 	
     float ProgressCounter = 0.0f;
     
-
-
-    
     long unsigned int StartTime = time(NULL);
     
-    //double FluoYield = 0.019;
-    
+    //double FluoYield = 0.019;    
 	//cout << "Processor " << ProcessorId << " starting" << endl;
 	
     for( unsigned long int EnergyTick = WorkToDo.StartEnergyTick; EnergyTick < WorkToDo.EndEnergyTick; EnergyTick++)
@@ -432,6 +428,7 @@ int main(int argc, char *argv[])
         float AbsorbCoeff = MuData.GetAbsorbCoeffDataPoint( EnergyToWavelength(Energy) );
 #ifndef FLUO_DISABLE
 		FluoData.PreSelectEnergy(Energy); //pre-gather data as high up the loop as we can.
+											//Sets up fluorescence data for the cross sections from a particular shell
 #endif
         for( int CosThetaStep = 0; CosThetaStep <= NumThetaSteps; CosThetaStep ++)
         {
@@ -445,7 +442,7 @@ int main(int argc, char *argv[])
             
             int CorrectedRepeats = floor( SolidAngleCorrectedRepeats + 0.5 ); //floor could probably be replaced by an int cast since we're only dealing +ve numbers here.
             
-            for( int PhiStep = 0; PhiStep < NumPhiSteps; PhiStep ++) //Do I want to go around by 2pi or slightly less than 2pi?
+            for( int PhiStep = 0; PhiStep < NumPhiSteps; PhiStep ++) //Q: Do I want to go around by 2pi or slightly less than 2pi? A: Slightly less
             {
                 double Phi = MinPhi + double(PhiStep)*deltaPhi;
                 
@@ -524,8 +521,8 @@ int main(int argc, char *argv[])
                                          Source.y - (Source.z/Direction.z)*Direction.y,
                                          0.0f);
                         
-                        double CCDIntersectX = NewSource.x + ((CCDZ-NewSource.z)/(ScatterDirection.z))*ScatterDirection.x; //60
-                        double CCDIntersectY = NewSource.y + ((CCDZ-NewSource.z)/(ScatterDirection.z))*ScatterDirection.y; //60
+                        double CCDIntersectX = NewSource.x + ((CCDZ-NewSource.z)/(ScatterDirection.z))*ScatterDirection.x; 
+                        double CCDIntersectY = NewSource.y + ((CCDZ-NewSource.z)/(ScatterDirection.z))*ScatterDirection.y; 
                        
 
                         DiffractResults << CCDIntersectX << "\t" << CCDIntersectY << "\t" << Energy << "\t" << BraggAngle << endl;
